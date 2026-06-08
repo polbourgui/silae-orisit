@@ -713,7 +713,20 @@ const app = createApp({
       const rect = event?.target?.closest?.('.assignee-field')?.getBoundingClientRect?.() ?? event?.target?.getBoundingClientRect?.();
       s.open = true;
       s.activeIdx = 0;
-      s.dropRect = rect ? { top: rect.bottom + window.scrollY, left: rect.left, width: rect.width } : null;
+      if (rect) {
+        const DROP_H = 240;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const flipUp = spaceBelow < DROP_H && rect.top > DROP_H;
+        s.dropRect = {
+          left: rect.left,
+          width: rect.width,
+          ...(flipUp
+            ? { bottom: window.innerHeight - rect.top + window.scrollY, top: 'auto' }
+            : { top: rect.bottom + window.scrollY, bottom: 'auto' }),
+        };
+      } else {
+        s.dropRect = null;
+      }
     }
 
     function closeSearch(creneauId) {
@@ -785,6 +798,18 @@ const app = createApp({
       proposeAlgo, publishPlanning, filteredExtras,
       openSearch, closeSearch, selectExtra, clearExtra,
       avatarColor, initials,
+      dropStyle: (creneauId) => {
+        const r = pSearchState.value[creneauId]?.dropRect;
+        if (!r) return {};
+        return {
+          position: 'fixed',
+          left: r.left + 'px',
+          width: r.width + 'px',
+          top: r.top !== 'auto' ? r.top + 'px' : 'auto',
+          bottom: (r.bottom !== undefined && r.bottom !== 'auto') ? r.bottom + 'px' : 'auto',
+          zIndex: 200,
+        };
+      },
       // extras
       eExtras, eLoading, eLinkModal, eLinkWeek, eSending,
       sendDispoLink, loadExtras,
@@ -1085,7 +1110,7 @@ const app = createApp({
 
             <!-- Dropdown suggestions -->
             <div v-if="pSearchState[row.id].open" class="suggestions"
-              :style="pSearchState[row.id].dropRect ? { position:'fixed', top: pSearchState[row.id].dropRect.top+'px', left: pSearchState[row.id].dropRect.left+'px', width: pSearchState[row.id].dropRect.width+'px', zIndex: 200 } : {}">
+              :style="dropStyle(row.id)">
               <div v-if="filteredExtras(row.id).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
                 Aucun résultat
               </div>
