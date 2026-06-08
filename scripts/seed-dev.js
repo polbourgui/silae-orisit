@@ -21,6 +21,19 @@ const isoWeek   = currentISOWeek();
 
 console.log(`\n🌱 Seed dev — semaine ${isoWeek}\n`);
 
+// ── Migrations inline (idempotent) ───────────────────────────────────────────
+await pool.query(`ALTER TABLE postes ALTER COLUMN code_emploi DROP NOT NULL`).catch(() => {});
+await pool.query(`ALTER TABLE postes ALTER COLUMN code_emploi SET DEFAULT NULL`).catch(() => {});
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS extras_postes (
+    extra_id UUID NOT NULL REFERENCES extras(id) ON DELETE CASCADE,
+    poste_id UUID NOT NULL REFERENCES postes(id) ON DELETE CASCADE,
+    site_id  UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+    PRIMARY KEY (extra_id, poste_id)
+  )
+`).catch(() => {});
+await pool.query(`ALTER TABLE postes ADD CONSTRAINT postes_site_libelle_unique UNIQUE (site_id, libelle)`).catch(() => {});
+
 // ── Site ────────────────────────────────────────────────────────────────────
 await pool.query(`
   INSERT INTO sites (id, nom, siret)
@@ -44,11 +57,10 @@ const postesData = [
 ];
 const postes = [];
 for (const libelle of postesData) {
+  const existing = await pool.query('SELECT id, libelle FROM postes WHERE site_id = $1 AND libelle = $2', [SITE_ID, libelle]);
+  if (existing.rows[0]) { postes.push(existing.rows[0]); continue; }
   const { rows } = await pool.query(
-    `INSERT INTO postes (site_id, libelle)
-     VALUES ($1, $2)
-     ON CONFLICT (site_id, libelle) DO UPDATE SET libelle = EXCLUDED.libelle
-     RETURNING id, libelle`,
+    `INSERT INTO postes (site_id, libelle) VALUES ($1, $2) RETURNING id, libelle`,
     [SITE_ID, libelle]
   );
   postes.push(rows[0]);
