@@ -224,7 +224,20 @@
     .btn-success { background: #16a34a; color: #fff; }
     .btn-success:hover { background: #15803d; }
     .btn-success:disabled { background: #86efac; cursor: not-allowed; }
-    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+    .data-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .data-table th { background: #f8fafc; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: 10px 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .data-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8fafc; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal { background: #fff; border-radius: 12px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+    .modal-header h3 { font-size: 15px; font-weight: 700; }
+    .modal-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; padding: 4px 8px; border-radius: 4px; }
+    .modal-close:hover { background: #f1f5f9; }
     .btn-full { width: 100%; justify-content: center; }
 
     .import-zone {
@@ -457,7 +470,7 @@ function initials(nom, prenom) { return `${prenom?.[0] ?? ''}${nom?.[0] ?? ''}`.
 const app = createApp({
   setup() {
     // ── Vue active ──────────────────────────────────────────────────────────
-    const activeView  = ref('creneaux'); // 'creneaux' | 'planning'
+    const activeView  = ref('creneaux'); // 'creneaux' | 'planning' | 'extras'
 
     const currentWeek = ref(isoWeekFromDate(new Date()));
     const creneaux    = ref([]);
@@ -721,6 +734,34 @@ const app = createApp({
       await selectExtra(creneauId, null);
     }
 
+    // ── Vue extras ─────────────────────────────────────────────────────────
+    const eExtras    = ref([]);
+    const eLoading   = ref(false);
+    const eLinkModal = ref(null); // { extra, semaine, url } | null
+    const eLinkWeek  = ref(isoWeekFromDate(new Date()));
+    const eSending   = ref({}); // { [extraId]: bool }
+
+    async function loadExtras() {
+      eLoading.value = true;
+      try { eExtras.value = await apiFetch('/extras'); }
+      catch (err) { showAlert('error', err.message); }
+      finally { eLoading.value = false; }
+    }
+
+    async function sendDispoLink(extra) {
+      eSending.value = { ...eSending.value, [extra.id]: true };
+      try {
+        const data = await apiFetch(`/extras/${extra.id}/send-dispo-link`, {
+          method: 'POST',
+          body: JSON.stringify({ semaine: eLinkWeek.value }),
+        });
+        eLinkModal.value = { extra, semaine: eLinkWeek.value, url: data.url, sent: data.sent };
+      } catch (err) { showAlert('error', err.message); }
+      finally { eSending.value = { ...eSending.value, [extra.id]: false }; }
+    }
+
+    watch(activeView, v => { if (v === 'extras' && eExtras.value.length === 0) loadExtras(); });
+
     return {
       JOURS, JOURS_COURT, PRESETS,
       activeView,
@@ -740,6 +781,9 @@ const app = createApp({
       proposeAlgo, publishPlanning, filteredExtras,
       openSearch, closeSearch, selectExtra, clearExtra,
       avatarColor, initials,
+      // extras
+      eExtras, eLoading, eLinkModal, eLinkWeek, eSending,
+      sendDispoLink, loadExtras,
     };
   },
 
@@ -1067,6 +1111,98 @@ const app = createApp({
   </div>
   </template><!-- fin vue planning -->
 
+  <!-- ── Vue extras ── -->
+  <template v-if="activeView === 'extras'">
+  <div class="page-header">
+    <div>
+      <h2>Extras</h2>
+      <p>Envoyez les liens de disponibilités à vos extras pour la semaine de votre choix.</p>
+    </div>
+    <button class="btn-primary" @click="loadExtras" :disabled="eLoading">
+      {{ eLoading ? 'Chargement…' : '↺ Actualiser' }}
+    </button>
+  </div>
+
+  <!-- Sélecteur semaine -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px">
+    <span style="font-size:13px;color:#64748b;white-space:nowrap">Semaine pour les liens :</span>
+    <input type="text" v-model="eLinkWeek" placeholder="ex: 2026-W24"
+      style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:13px;color:#1e293b;width:120px" />
+    <span style="font-size:12px;color:#94a3b8">Les liens générés seront valables 48h</span>
+  </div>
+
+  <div v-if="eLoading" style="text-align:center;padding:40px;color:#94a3b8">Chargement…</div>
+  <div v-else-if="eExtras.length === 0" class="empty-state">
+    <div class="icon">👤</div>
+    <p>Aucun extra enregistré.</p>
+  </div>
+  <table v-else class="data-table">
+    <thead><tr>
+      <th>Extra</th>
+      <th>Email</th>
+      <th>Téléphone</th>
+      <th style="text-align:right">Lien disponibilités</th>
+    </tr></thead>
+    <tbody>
+      <tr v-for="e in eExtras" :key="e.id">
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div :style="{width:'32px',height:'32px',borderRadius:'50%',background:avatarColor(e.id),display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'12px',fontWeight:700}">
+              {{ initials(e.nom, e.prenom) }}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">{{ e.prenom }} {{ e.nom }}</div>
+              <div style="font-size:11px;color:#94a3b8">{{ e.matricule_silae }}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:13px;color:#475569">{{ e.email }}</td>
+        <td style="font-size:13px;color:#475569">{{ e.telephone || '—' }}</td>
+        <td style="text-align:right">
+          <button class="btn-sm btn-primary" :disabled="eSending[e.id]" @click="sendDispoLink(e)">
+            {{ eSending[e.id] ? '…' : '🔗 Envoyer lien' }}
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Modal résultat lien -->
+  <div v-if="eLinkModal" class="modal-overlay" @click.self="eLinkModal = null">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-header">
+        <h3>Lien de disponibilités</h3>
+        <button class="modal-close" @click="eLinkModal = null">✕</button>
+      </div>
+      <div class="modal-body" style="padding:20px">
+        <p style="margin-bottom:12px;font-size:14px">
+          <strong>{{ eLinkModal.extra.prenom }} {{ eLinkModal.extra.nom }}</strong>
+          — semaine {{ eLinkModal.semaine }}
+        </p>
+        <div v-if="eLinkModal.sent" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;font-size:13px;color:#166534;margin-bottom:12px">
+          ✓ Email envoyé à {{ eLinkModal.extra.email }}
+        </div>
+        <div v-else style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:12px;color:#92400e;margin-bottom:12px">
+          Mode dev — copiez et envoyez ce lien manuellement
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input readonly :value="eLinkModal.url"
+            style="flex:1;border:1px solid #e2e8f0;border-radius:6px;padding:8px 10px;font-size:12px;font-family:monospace;background:#f8fafc;color:#334155"
+            @click="$event.target.select()" />
+          <button class="btn-sm btn-primary" @click="navigator.clipboard.writeText(eLinkModal.url).then(()=>showAlert('success','Lien copié !'))">
+            Copier
+          </button>
+        </div>
+        <a :href="eLinkModal.url" target="_blank"
+          style="display:block;margin-top:10px;font-size:12px;color:#2563eb;text-decoration:none">
+          → Ouvrir dans un nouvel onglet
+        </a>
+      </div>
+    </div>
+  </div>
+
+  </template><!-- fin vue extras -->
+
 </div>
   `,
 });
@@ -1115,6 +1251,12 @@ if (!token) {
   document.getElementById('nav-plannings').addEventListener('click', e => {
     e.preventDefault();
     vueApp.activeView = 'planning';
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    e.target.classList.add('active');
+  });
+  document.getElementById('nav-extras').addEventListener('click', e => {
+    e.preventDefault();
+    vueApp.activeView = 'extras';
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
     e.target.classList.add('active');
   });
