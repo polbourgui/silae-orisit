@@ -327,9 +327,9 @@
   .assignee-field .clear-btn:hover { color: #dc2626; }
 
   .suggestions {
-    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 50;
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
     background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
-    box-shadow: 0 8px 20px rgba(0,0,0,.1); overflow: hidden; max-height: 240px; overflow-y: auto;
+    box-shadow: 0 8px 20px rgba(0,0,0,.15); overflow: hidden; max-height: 240px; overflow-y: auto;
   }
   .suggestion-item {
     display: flex; align-items: center; gap: 10px;
@@ -659,7 +659,7 @@ const app = createApp({
         pAffectations.value = data.affectations;
         // Initialiser l'état de recherche pour chaque créneau
         const state = {};
-        for (const c of data.creneaux) state[c.id] = { query: '', open: false, activeIdx: 0 };
+        for (const c of data.creneaux) state[c.id] = { query: '', open: false, activeIdx: 0, dropRect: null };
         pSearchState.value = state;
       } catch (err) { showAlert('error', err.message); }
       finally { pLoading.value = false; }
@@ -706,10 +706,14 @@ const app = createApp({
         .sort((a, b) => (b.hasDispo ? 1 : 0) - (a.hasDispo ? 1 : 0));
     }
 
-    function openSearch(creneauId) {
+    function openSearch(creneauId, event) {
       if (pIsPublished.value) return;
       const s = pSearchState.value[creneauId];
-      if (s) { s.open = true; s.activeIdx = 0; }
+      if (!s) return;
+      const rect = event?.target?.closest?.('.assignee-field')?.getBoundingClientRect?.() ?? event?.target?.getBoundingClientRect?.();
+      s.open = true;
+      s.activeIdx = 0;
+      s.dropRect = rect ? { top: rect.bottom + window.scrollY, left: rect.left, width: rect.width } : null;
     }
 
     function closeSearch(creneauId) {
@@ -1070,7 +1074,7 @@ const app = createApp({
                 :style="row.extra ? 'color:#15803d;font-weight:500' : ''"
                 :value="pSearchState[row.id].query"
                 @input="pSearchState[row.id].query = $event.target.value"
-                @focus="openSearch(row.id)"
+                @focus="openSearch(row.id, $event)"
                 @blur="closeSearch(row.id)"
               />
               <span v-else style="flex:1;color:#15803d;font-weight:500">
@@ -1080,7 +1084,8 @@ const app = createApp({
             </div>
 
             <!-- Dropdown suggestions -->
-            <div v-if="pSearchState[row.id].open" class="suggestions">
+            <div v-if="pSearchState[row.id].open" class="suggestions"
+              :style="pSearchState[row.id].dropRect ? { position:'fixed', top: pSearchState[row.id].dropRect.top+'px', left: pSearchState[row.id].dropRect.left+'px', width: pSearchState[row.id].dropRect.width+'px', zIndex: 200 } : {}">
               <div v-if="filteredExtras(row.id).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
                 Aucun résultat
               </div>
