@@ -24,5 +24,6 @@ export async function applyIncrementalMigrations() {
       UNIQUE (site_id, label)
     )
   `);
+  await pool.query(`ALTER TABLE extras ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE`);
   logger.info({ message: 'incremental migrations OK' });
 }
