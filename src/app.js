@@ -17,6 +17,7 @@ import errorHandler from './middleware/errorHandler.js';
 import logger from './logger.js';
 import { startSendDispoJob } from './jobs/sendDispoLinks.js';
 import { startPlanningProposalJob } from './jobs/generatePlanningProposal.js';
+import { applyIncrementalMigrations } from './models/migrate.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -48,10 +49,15 @@ app.use('/presets', presetsRouter);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    logger.info({ message: `silae-orisit listening on port ${PORT}` });
-    startSendDispoJob();
-    startPlanningProposalJob();
+  applyIncrementalMigrations().then(() => {
+    app.listen(PORT, () => {
+      logger.info({ message: `silae-orisit listening on port ${PORT}` });
+      startSendDispoJob();
+      startPlanningProposalJob();
+    });
+  }).catch(err => {
+    logger.error({ message: 'incremental migrations failed', err });
+    process.exit(1);
   });
 }
 
