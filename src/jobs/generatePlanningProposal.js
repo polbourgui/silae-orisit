@@ -1,46 +1,55 @@
 import cron from 'node-cron';
+import 'dotenv/config';
+import logger from '../logger.js';
 import pool from '../models/db.js';
+import { findExtrasBySite } from '../models/extrasModel.js';
+import { findSemaineBySite } from '../models/semainModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
 import { findPlanningBySemaine, createPlanning, createAffectation } from '../models/planningsModel.js';
 import { greedyScheduler } from '../services/planningService.js';
 import { getCurrentISOWeek } from '../utils/dates.js';
-import logger from '../logger.js';
 
-async function generateProposalsForAllSites() {
-  const semaine = getCurrentISOWeek();
-  const { rows: semaines } = await pool.query(
-    'SELECT id, site_id FROM semaines WHERE iso_week = $1',
-    [semaine]
-  );
+async function generatePlanningProposalsForAllSites() {
+  logger.info({ message: 'generatePlanningProposal job start' });
+  const { rows: sites } = await pool.query('SELECT id FROM sites');
+  const isoWeek = getCurrentISOWeek();
 
-  for (const sem of semaines) {
+  for (const site of sites) {
     try {
-      const existingPlanning = await findPlanningBySemaine(sem.id, sem.site_id);
-      if (existingPlanning) continue;
-
-      const dispos = await findDisponibilites(sem.id, sem.site_id);
-      if (!dispos.disponibilites?.length) continue;
-
-      const planning = await createPlanning(sem.id, sem.site_id);
-      const affectations = greedyScheduler(dispos.extras, dispos.creneaux, dispos.disponibilites);
-
-      for (const aff of affectations) {
-        await createAffectation(planning.id, aff.extra_id, aff.creneau_id, sem.site_id);
+      const semaines = await findSemaineBySite(site.id);
+      const semaine = semaines.find((s) => s.iso_week === isoWeek);
+      if (!semaine) {
+        logger.info({ message: 'No semaine found for site', site_id: site.id, isoWeek });
+        continue;
       }
-
-      logger.info({
-        msg: 'Proposition planning générée',
-        semaineId: sem.id,
-        siteId: sem.site_id,
-        affectations: affectations.length,
-      });
+      const existingPlanning = await findPlanningBySemaine(semaine.id, site.id);
+      if (existingPlanning) {
+        logger.info({ message: 'Planning already exists', site_id: site.id, semaine_id: semaine.id });
+        continue;
+      }
+      const dispos = await findDisponibilites(semaine.id, site.id);
+      if (dispos.length === 0) {
+        logger.info({ message: 'No dispos for site this week', site_id: site.id });
+        continue;
+      }
+      const extras = await findExtrasBySite(site.id);
+      const { rows: creneaux } = await pool.query(
+        'SELECT id, heure_debut, heure_fin FROM creneaux WHERE semaine_id = $1',
+        [semaine.id]
+      );
+      const proposals = greedyScheduler(extras, creneaux, dispos);
+      const planning = await createPlanning(semaine.id, site.id);
+      for (const { extra_id, creneau_id } of proposals) {
+        await createAffectation(planning.id, extra_id, creneau_id, site.id);
+      }
+      logger.info({ message: 'Planning proposal created', site_id: site.id, planning_id: planning.id, count: proposals.length });
     } catch (err) {
-      logger.error({ msg: 'Erreur génération planning', semaineId: sem.id, err: err.message });
+      logger.error({ message: 'generatePlanningProposal failed for site', site_id: site.id, err });
     }
   }
 }
 
 export function startPlanningProposalJob() {
-  cron.schedule('0 19 * * 4', generateProposalsForAllSites, { timezone: 'Europe/Paris' });
-  logger.info({ msg: 'Job generatePlanningProposal planifié (jeudi 19h)' });
+  cron.schedule('0 19 * * 4', generatePlanningProposalsForAllSites, { timezone: 'Europe/Paris' });
+  logger.info({ message: 'generatePlanningProposal job scheduled: thursday 19:00' });
 }

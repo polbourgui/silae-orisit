@@ -1,81 +1,98 @@
-import express from 'express';
-import request from 'supertest';
-import { generateManagerToken } from '../../src/utils/jwt.js';
-import { requireManagerAuth } from '../../src/middleware/auth.js';
-import siteScope from '../../src/middleware/siteScope.js';
-import errorHandler from '../../src/middleware/errorHandler.js';
+import { jest } from '@jest/globals';
 
-process.env.JWT_SECRET = 'test_manager_secret';
-process.env.JWT_MAGIC_LINK_SECRET = 'test_magic_secret';
+process.env.JWT_SECRET = 'test_jwt_secret_32chars_minimum!!';
+process.env.JWT_MAGIC_LINK_SECRET = 'test_magic_secret_32chars_minimum';
+process.env.NODE_ENV = 'test';
 
-function buildApp() {
-  const app = express();
-  app.use(express.json());
-  app.get('/resource', requireManagerAuth, siteScope, (req, res) => {
-    res.json({ ok: true, siteId: req.siteId });
-  });
-  app.use(errorHandler);
-  return app;
+const siteScope = (await import('../../src/middleware/siteScope.js')).default;
+const { ForbiddenError } = await import('../../src/errors/index.js');
+
+function makeReq(opts = {}) {
+  return {
+    manager: opts.manager ?? null,
+    body: opts.body ?? {},
+    params: opts.params ?? {},
+  };
+}
+
+function makeRes() {
+  return {};
 }
 
 describe('siteScope middleware', () => {
-  test('autorise l\'accès avec un JWT valide et retourne le siteId', async () => {
+  test('attaches req.siteId from JWT and calls next', () => {
     // Arrange
-    const token = generateManagerToken({ manager_id: 'm1', site_id: 's1', role: 'manager' });
-    const app = buildApp();
+    const req = makeReq({ manager: { site_id: 'site-abc', manager_id: 'm1', role: 'manager' } });
+    const res = makeRes();
+    const next = jest.fn();
 
     // Act
-    const res = await request(app)
-      .get('/resource')
-      .set('Authorization', `Bearer ${token}`);
+    siteScope(req, res, next);
 
     // Assert
-    expect(res.status).toBe(200);
-    expect(res.body.siteId).toBe('s1');
+    expect(req.siteId).toBe('site-abc');
+    expect(next).toHaveBeenCalledWith();
   });
 
-  test('retourne 401 sans token', async () => {
+  test('calls next with ForbiddenError when body.site_id differs from JWT site_id', () => {
     // Arrange
-    const app = buildApp();
-
-    // Act
-    const res = await request(app).get('/resource');
-
-    // Assert
-    expect(res.status).toBe(401);
-  });
-
-  test('retourne 401 avec un token invalide', async () => {
-    // Arrange
-    const app = buildApp();
-
-    // Act
-    const res = await request(app)
-      .get('/resource')
-      .set('Authorization', 'Bearer token.invalide.ici');
-
-    // Assert
-    expect(res.status).toBe(401);
-  });
-
-  test('le siteId provient du JWT, jamais du body', async () => {
-    // Arrange — le client envoie un site_id différent dans le body
-    const token = generateManagerToken({ manager_id: 'm1', site_id: 's1', role: 'manager' });
-    const app = express();
-    app.use(express.json());
-    app.post('/resource', requireManagerAuth, siteScope, (req, res) => {
-      res.json({ ok: true, siteId: req.siteId });
+    const req = makeReq({
+      manager: { site_id: 'site-abc', manager_id: 'm1', role: 'manager' },
+      body: { site_id: 'site-xyz' },
     });
-    app.use(errorHandler);
+    const res = makeRes();
+    const next = jest.fn();
 
     // Act
-    const res = await request(app)
-      .post('/resource')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ site_id: 's_malveillant' });
+    siteScope(req, res, next);
 
-    // Assert — le siteId retourné est celui du JWT, pas celui du body
-    expect(res.body.siteId).toBe('s1');
-    expect(res.body.siteId).not.toBe('s_malveillant');
+    // Assert
+    expect(next).toHaveBeenCalledWith(expect.any(ForbiddenError));
+  });
+
+  test('calls next with ForbiddenError when params.site_id differs from JWT site_id', () => {
+    // Arrange
+    const req = makeReq({
+      manager: { site_id: 'site-abc', manager_id: 'm1', role: 'manager' },
+      params: { site_id: 'site-xyz' },
+    });
+    const res = makeRes();
+    const next = jest.fn();
+
+    // Act
+    siteScope(req, res, next);
+
+    // Assert
+    expect(next).toHaveBeenCalledWith(expect.any(ForbiddenError));
+  });
+
+  test('calls next with ForbiddenError when manager is missing', () => {
+    // Arrange
+    const req = makeReq({ manager: null });
+    const res = makeRes();
+    const next = jest.fn();
+
+    // Act
+    siteScope(req, res, next);
+
+    // Assert
+    expect(next).toHaveBeenCalledWith(expect.any(ForbiddenError));
+  });
+
+  test('allows matching body.site_id', () => {
+    // Arrange
+    const req = makeReq({
+      manager: { site_id: 'site-abc', manager_id: 'm1', role: 'manager' },
+      body: { site_id: 'site-abc' },
+    });
+    const res = makeRes();
+    const next = jest.fn();
+
+    // Act
+    siteScope(req, res, next);
+
+    // Assert
+    expect(req.siteId).toBe('site-abc');
+    expect(next).toHaveBeenCalledWith();
   });
 });
