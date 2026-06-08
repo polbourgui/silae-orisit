@@ -391,15 +391,16 @@ import { createApp, ref, computed, watch, onMounted } from '/vendor/vue.esm-brow
 const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
 const JOURS_COURT = { lundi:'Lun', mardi:'Mar', mercredi:'Mer', jeudi:'Jeu', vendredi:'Ven', samedi:'Sam', dimanche:'Dim' };
 
-const PRESETS = [
-  { label: 'Service midi',   slot_label: 'Service midi',   heure_debut: '11:00', heure_fin: '15:00' },
-  { label: 'Service soir',   slot_label: 'Service soir',   heure_debut: '18:00', heure_fin: '23:00' },
-  { label: 'Nuit',           slot_label: 'Nuit',           heure_debut: '22:30', heure_fin: '06:00' },
-  { label: 'Journée',        slot_label: 'Journée',        heure_debut: '09:00', heure_fin: '17:00' },
-  { label: 'Matin',          slot_label: 'Matin',          heure_debut: '08:00', heure_fin: '13:00' },
-  { label: 'Après-midi',     slot_label: 'Après-midi',     heure_debut: '13:00', heure_fin: '18:00' },
-  { label: 'Coupure midi',   slot_label: 'Coupure midi',   heure_debut: '11:00', heure_fin: '14:30' },
-  { label: 'Coupure soir',   slot_label: 'Coupure soir',   heure_debut: '19:00', heure_fin: '23:30' },
+// Présets chargés depuis l'API (remplace la constante statique)
+const PRESETS_DEFAULT = [
+  { label: 'Service midi',  slot_label: 'Service midi',  heure_debut: '11:00', heure_fin: '15:00' },
+  { label: 'Service soir',  slot_label: 'Service soir',  heure_debut: '18:00', heure_fin: '23:00' },
+  { label: 'Nuit',          slot_label: 'Nuit',          heure_debut: '22:30', heure_fin: '06:00' },
+  { label: 'Journée',       slot_label: 'Journée',       heure_debut: '09:00', heure_fin: '17:00' },
+  { label: 'Matin',         slot_label: 'Matin',         heure_debut: '08:00', heure_fin: '13:00' },
+  { label: 'Après-midi',    slot_label: 'Après-midi',    heure_debut: '13:00', heure_fin: '18:00' },
+  { label: 'Coupure midi',  slot_label: 'Coupure midi',  heure_debut: '11:00', heure_fin: '14:30' },
+  { label: 'Coupure soir',  slot_label: 'Coupure soir',  heure_debut: '19:00', heure_fin: '23:30' },
 ];
 
 function authHeader() {
@@ -516,7 +517,7 @@ const app = createApp({
     }
 
     watch(currentWeek, loadWeek);
-    onMounted(loadWeek);
+    onMounted(() => { loadWeek(); loadPresets(); });
 
     function showAlert(type, msg) {
       alertMsg.value = { type, msg };
@@ -627,6 +628,38 @@ const app = createApp({
         cancelImport();
       } catch (err) { showAlert('error', err.message); }
       finally { saving.value = false; }
+    }
+
+    // ── Présets dynamiques ──────────────────────────────────────────────────
+    const presets         = ref([]);
+    const presetsEditOpen = ref(false);
+    const presetForm      = ref({ label: '', slot_label: '', heure_debut: '', heure_fin: '' });
+    const presetSaving    = ref(false);
+
+    async function loadPresets() {
+      try {
+        const data = await apiFetch('/presets');
+        presets.value = data.length ? data : PRESETS_DEFAULT;
+      } catch { presets.value = PRESETS_DEFAULT; }
+    }
+
+    async function addPreset() {
+      const { label, slot_label, heure_debut, heure_fin } = presetForm.value;
+      if (!label.trim() || !heure_debut || !heure_fin) return;
+      presetSaving.value = true;
+      try {
+        const p = await apiFetch('/presets', { method: 'POST', body: JSON.stringify({ label: label.trim(), slot_label: slot_label.trim() || label.trim(), heure_debut, heure_fin }) });
+        presets.value = [...presets.value, p];
+        presetForm.value = { label: '', slot_label: '', heure_debut: '', heure_fin: '' };
+      } catch (err) { showAlert('error', err.message); }
+      finally { presetSaving.value = false; }
+    }
+
+    async function removePreset(id) {
+      try {
+        await apiFetch(`/presets/${id}`, { method: 'DELETE' });
+        presets.value = presets.value.filter(p => p.id !== id);
+      } catch (err) { showAlert('error', err.message); }
     }
 
     function posteLabel(posteId) {
@@ -854,7 +887,7 @@ const app = createApp({
     }
 
     return {
-      JOURS, JOURS_COURT, PRESETS,
+      JOURS, JOURS_COURT,
       activeView,
       currentWeek, weekLabel, boundsLabel,
       creneaux, tableRows, postes, loading, saving, alertMsg,
@@ -862,6 +895,7 @@ const app = createApp({
       csvRows, csvParsed, totalHeures,
       prevWeek: () => { currentWeek.value = offsetWeek(currentWeek.value, -1); },
       nextWeek: () => { currentWeek.value = offsetWeek(currentWeek.value, +1); },
+      presets, presetsEditOpen, presetForm, presetSaving, addPreset, removePreset,
       toggleJour, addCreneau, applyPreset, deleteCreneau,
       onFileChange, onDrop, cancelImport, confirmImport,
       posteLabel, duration,
@@ -986,9 +1020,41 @@ const app = createApp({
         <div class="card-body">
 
           <div class="form-section">
-            <h4>Présets rapides</h4>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <h4 style="margin:0">Présets rapides</h4>
+              <button class="btn-sm" style="background:none;border:1px solid #e2e8f0;color:#64748b;font-size:11px"
+                @click="presetsEditOpen = !presetsEditOpen">
+                {{ presetsEditOpen ? '✕ Fermer' : '✎ Modifier' }}
+              </button>
+            </div>
             <div class="presets">
-              <button v-for="p in PRESETS" :key="p.label" class="preset-btn" @click="applyPreset(p)">{{ p.label }}</button>
+              <button v-for="p in presets" :key="p.id ?? p.label" class="preset-btn" @click="applyPreset(p)">{{ p.label }}</button>
+            </div>
+
+            <!-- Panneau édition présets -->
+            <div v-if="presetsEditOpen" style="margin-top:12px;border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#f8fafc">
+              <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">Présets enregistrés</div>
+              <div v-for="p in presets" :key="p.id ?? p.label"
+                style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9">
+                <span style="flex:1;font-size:13px">{{ p.label }}</span>
+                <span style="font-size:11px;color:#94a3b8;font-family:monospace">{{ p.heure_debut }}–{{ p.heure_fin }}</span>
+                <button v-if="p.id" class="btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:2px 8px"
+                  @click="removePreset(p.id)">✕</button>
+                <span v-else style="font-size:10px;color:#94a3b8;font-style:italic">défaut</span>
+              </div>
+              <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <input v-model="presetForm.label" placeholder="Nom (ex: Brunch)" type="text"
+                  style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;font-size:12px;grid-column:1/-1" />
+                <input v-model="presetForm.heure_debut" placeholder="Début 09:00" type="text"
+                  style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;font-size:12px" />
+                <input v-model="presetForm.heure_fin" placeholder="Fin 14:00" type="text"
+                  style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;font-size:12px" />
+              </div>
+              <button class="btn-primary" style="margin-top:8px;width:100%;border-radius:6px;padding:7px;font-size:13px"
+                :disabled="presetSaving || !presetForm.label.trim() || !presetForm.heure_debut || !presetForm.heure_fin"
+                @click="addPreset">
+                + Ajouter ce préset
+              </button>
             </div>
           </div>
 

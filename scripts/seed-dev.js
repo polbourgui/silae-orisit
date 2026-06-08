@@ -33,6 +33,19 @@ await pool.query(`
   )
 `).catch(() => {});
 await pool.query(`ALTER TABLE postes ADD CONSTRAINT postes_site_libelle_unique UNIQUE (site_id, libelle)`).catch(() => {});
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS presets (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    site_id     UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+    label       VARCHAR(100) NOT NULL,
+    slot_label  VARCHAR(100) NOT NULL,
+    heure_debut VARCHAR(5)   NOT NULL,
+    heure_fin   VARCHAR(5)   NOT NULL,
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (site_id, label)
+  )
+`).catch(() => {});
 
 // ── Site ────────────────────────────────────────────────────────────────────
 await pool.query(`
@@ -50,6 +63,24 @@ await pool.query(`
   ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash
 `, [SITE_ID, hash]);
 console.log('✓ Manager  admin@test.fr / test1234');
+
+// ── Présets ──────────────────────────────────────────────────────────────────
+const presetsData = [
+  { label: 'Service midi',  slot_label: 'Service midi',  heure_debut: '11:00', heure_fin: '15:00', sort_order: 0 },
+  { label: 'Service soir',  slot_label: 'Service soir',  heure_debut: '18:00', heure_fin: '23:00', sort_order: 1 },
+  { label: 'Nuit',          slot_label: 'Nuit',          heure_debut: '22:30', heure_fin: '06:00', sort_order: 2 },
+  { label: 'Journée',       slot_label: 'Journée',       heure_debut: '09:00', heure_fin: '17:00', sort_order: 3 },
+  { label: 'Matin',         slot_label: 'Matin',         heure_debut: '08:00', heure_fin: '13:00', sort_order: 4 },
+  { label: 'Après-midi',    slot_label: 'Après-midi',    heure_debut: '13:00', heure_fin: '18:00', sort_order: 5 },
+];
+for (const p of presetsData) {
+  const ex = await pool.query('SELECT id FROM presets WHERE site_id=$1 AND label=$2', [SITE_ID, p.label]);
+  if (!ex.rows[0]) await pool.query(
+    'INSERT INTO presets (site_id, label, slot_label, heure_debut, heure_fin, sort_order) VALUES ($1,$2,$3,$4,$5,$6)',
+    [SITE_ID, p.label, p.slot_label, p.heure_debut, p.heure_fin, p.sort_order]
+  );
+}
+console.log(`✓ ${presetsData.length} présets`);
 
 // ── Postes ───────────────────────────────────────────────────────────────────
 const postesData = [
