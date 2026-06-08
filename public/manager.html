@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Silae Orisit — Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    header {
+      background: #1e40af;
+      color: #fff;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+    header span { opacity: .6; font-size: 13px; }
+    header .spacer { flex: 1; }
+    header button { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    header button:hover { background: rgba(255,255,255,.25); }
+
+    .layout { display: flex; height: calc(100vh - 52px); }
+
+    nav {
+      width: 220px;
+      background: #fff;
+      border-right: 1px solid #e2e8f0;
+      padding: 16px 0;
+      flex-shrink: 0;
+    }
+    nav .nav-section { padding: 4px 16px 2px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; }
+    nav a {
+      display: block;
+      padding: 8px 20px;
+      color: #475569;
+      text-decoration: none;
+      font-size: 13px;
+      border-left: 3px solid transparent;
+    }
+    nav a:hover { background: #f8fafc; color: #1e293b; }
+    nav a.active { border-left-color: #1e40af; background: #eff6ff; color: #1e40af; font-weight: 500; }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-header h2 { font-size: 20px; font-weight: 600; }
+    .page-header p { color: #64748b; margin-top: 2px; font-size: 13px; }
+
+    /* ── Week nav ── */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+    }
+    .week-nav button {
+      background: none;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      color: #475569;
+    }
+    .week-nav button:hover { background: #f1f5f9; }
+    .week-nav .week-label { font-weight: 600; font-size: 15px; min-width: 160px; text-align: center; }
+    .week-nav .week-bounds { font-size: 12px; color: #94a3b8; }
+    .week-nav .spacer { flex: 1; }
+    .week-nav .status-badge {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .badge-draft { background: #fef9c3; color: #854d0e; }
+    .badge-published { background: #dcfce7; color: #166534; }
+
+    /* ── Two-column layout ── */
+    .columns { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header h3 { font-size: 14px; font-weight: 600; }
+    .card-body { padding: 18px; }
+
+    /* ── Créneau table ── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #64748b;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .time-range { font-variant-numeric: tabular-nums; color: #334155; }
+    .btn-icon {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #94a3b8;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .btn-icon:hover { background: #fee2e2; color: #dc2626; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+    }
+    .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── Form panel ── */
+    .form-section { margin-bottom: 20px; }
+    .form-section h4 {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .form-group label { font-size: 12px; font-weight: 500; color: #475569; }
+    .form-group input, .form-group select {
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: #1e293b;
+      background: #fff;
+      width: 100%;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+    .form-group input.error { border-color: #f87171; }
+    .error-msg { font-size: 11px; color: #dc2626; margin-top: 2px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .12s;
+    }
+    .btn-primary { background: #1e40af; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-secondary { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-success:hover { background: #15803d; }
+    .btn-success:disabled { background: #86efac; cursor: not-allowed; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ── Import CSV ── */
+    .import-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 10px;
+      transition: border-color .15s, background .15s;
+    }
+    .import-zone:hover, .import-zone.drag-over { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+    .import-zone input[type=file] { display: none; }
+
+    /* ── Templates présets ── */
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .preset-btn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 12px;
+      cursor: pointer;
+      color: #475569;
+    }
+    .preset-btn:hover { background: #eff6ff; border-color: #93c5fd; color: #1e40af; }
+
+    /* ── Alerts ── */
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 18px;
+      flex: 1;
+    }
+    .stat .value { font-size: 24px; font-weight: 700; color: #1e40af; }
+    .stat .label { font-size: 12px; color: #64748b; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Silae Orisit</h1>
+  <span id="site-name">—</span>
+  <div class="spacer"></div>
+  <span id="manager-name" style="font-size:13px; opacity:.8; margin-right:8px;"></span>
+  <button id="btn-logout">Déconnexion</button>
+</header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section">Planning</div>
+    <a href="#creneaux" class="active" id="nav-creneaux">Créneaux semaine</a>
+    <a href="#plannings" id="nav-plannings">Planning & affectations</a>
+    <div class="nav-section" style="margin-top:12px">Données</div>
+    <a href="#extras" id="nav-extras">Extras</a>
+  </nav>
+
+  <main id="app">
+    <!-- Injecté par Vue -->
+  </main>
+</div>
+
+<script type="module">
+import { createApp, ref, computed, watch, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+
+const API = '';
+
+function authHeader() {
+  const token = localStorage.getItem('manager_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...authHeader(), ...opts.headers },
+    ...opts,
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error ?? `Erreur ${res.status}`);
+  return json.data;
+}
+
+// ── ISO week helpers ──────────────────────────────────────────────────────────
+function isoWeekFromDate(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const y = d.getUTCFullYear();
+  const yearStart = new Date(Date.UTC(y, 0, 1));
+  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${y}-W${String(week).padStart(2, '0')}`;
+}
+
+function weekBounds(isoWeek) {
+  const [yearStr, weekStr] = isoWeek.split('-W');
+  const year = parseInt(yearStr, 10);
+  const week = parseInt(weekStr, 10);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const start = new Date(jan4);
+  start.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 6);
+  const fmt = (d) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+  return `${fmt(start)} → ${fmt(end)}`;
+}
+
+function offsetWeek(isoWeek, delta) {
+  const [yearStr, weekStr] = isoWeek.split('-W');
+  const year = parseInt(yearStr, 10);
+  const week = parseInt(weekStr, 10);
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const monday = new Date(jan4);
+  monday.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
+  monday.setUTCDate(monday.getUTCDate() + delta * 7);
+  return isoWeekFromDate(monday);
+}
+
+// ── Presets créneaux ──────────────────────────────────────────────────────────
+const PRESETS = [
+  { label: 'Service midi', slot_label: 'Service midi', heure_debut: '11:00', heure_fin: '15:00' },
+  { label: 'Service soir', slot_label: 'Service soir', heure_debut: '18:00', heure_fin: '23:00' },
+  { label: 'Journée complète', slot_label: 'Journée', heure_debut: '09:00', heure_fin: '17:00' },
+  { label: 'Matin', slot_label: 'Matin', heure_debut: '08:00', heure_fin: '13:00' },
+  { label: 'Après-midi', slot_label: 'Après-midi', heure_debut: '13:00', heure_fin: '18:00' },
+];
+
+// ── App ───────────────────────────────────────────────────────────────────────
+const app = createApp({
+  setup() {
+    const currentWeek = ref(isoWeekFromDate(new Date()));
+    const creneaux    = ref([]);
+    const postes      = ref([]);
+    const semaine     = ref(null);
+    const loading     = ref(false);
+    const saving      = ref(false);
+    const alert       = ref(null);
+
+    // Form single creneau
+    const form = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '' });
+    const formErrors = ref({});
+
+    // Import CSV preview
+    const csvRows   = ref([]);
+    const csvParsed = ref(false);
+
+    const weekLabel  = computed(() => currentWeek.value.replace('-W', ' — Semaine '));
+    const weekBoundsLabel = computed(() => weekBounds(currentWeek.value));
+
+    async function loadWeek() {
+      loading.value = true;
+      alert.value = null;
+      try {
+        const data = await apiFetch(`/creneaux/semaine/${currentWeek.value}`);
+        semaine.value  = data.semaine;
+        creneaux.value = data.creneaux;
+        postes.value   = data.postes;
+      } catch (err) {
+        showAlert('error', err.message);
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    function prevWeek() { currentWeek.value = offsetWeek(currentWeek.value, -1); }
+    function nextWeek() { currentWeek.value = offsetWeek(currentWeek.value, +1); }
+
+    watch(currentWeek, loadWeek);
+    onMounted(loadWeek);
+
+    function showAlert(type, msg) {
+      alert.value = { type, msg };
+      setTimeout(() => { alert.value = null; }, 4000);
+    }
+
+    // ── Validation form ─────────────────────────────────────────────────────
+    function validateForm(f) {
+      const errors = {};
+      if (!f.slot_label.trim()) errors.slot_label = 'Libellé requis';
+      const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
+      if (!timeRe.test(f.heure_debut)) errors.heure_debut = 'Format HH:MM';
+      if (!timeRe.test(f.heure_fin))   errors.heure_fin   = 'Format HH:MM';
+      if (!errors.heure_debut && !errors.heure_fin && f.heure_debut >= f.heure_fin) {
+        errors.heure_fin = 'Doit être après l\'heure de début';
+      }
+      return errors;
+    }
+
+    // ── Ajout unitaire ───────────────────────────────────────────────────────
+    async function addCreneau() {
+      formErrors.value = validateForm(form.value);
+      if (Object.keys(formErrors.value).length) return;
+      saving.value = true;
+      try {
+        const created = await apiFetch(`/creneaux/semaine/${currentWeek.value}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            slot_label:  form.value.slot_label.trim(),
+            heure_debut: form.value.heure_debut,
+            heure_fin:   form.value.heure_fin,
+            poste_id:    form.value.poste_id || null,
+          }),
+        });
+        creneaux.value.push(created);
+        form.value = { slot_label: '', heure_debut: '', heure_fin: '', poste_id: '' };
+        showAlert('success', 'Créneau ajouté');
+      } catch (err) {
+        showAlert('error', err.message);
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    // ── Preset ──────────────────────────────────────────────────────────────
+    function applyPreset(preset) {
+      form.value.slot_label  = preset.slot_label;
+      form.value.heure_debut = preset.heure_debut;
+      form.value.heure_fin   = preset.heure_fin;
+      formErrors.value = {};
+    }
+
+    // ── Suppression ─────────────────────────────────────────────────────────
+    async function deleteCreneau(id) {
+      if (!confirm('Supprimer ce créneau ?')) return;
+      try {
+        await apiFetch(`/creneaux/semaine/${currentWeek.value}/${id}`, { method: 'DELETE' });
+        creneaux.value = creneaux.value.filter(c => c.id !== id);
+        showAlert('success', 'Créneau supprimé');
+      } catch (err) {
+        showAlert('error', err.message);
+      }
+    }
+
+    // ── Import CSV ───────────────────────────────────────────────────────────
+    function parseCSV(text) {
+      const lines = text.trim().split('\n').filter(l => l.trim());
+      const rows  = [];
+      for (const line of lines) {
+        const parts = line.split(';').map(s => s.trim().replace(/^"|"$/g, ''));
+        if (parts.length < 3) continue;
+        const [slot_label, heure_debut, heure_fin, poste_id] = parts;
+        rows.push({ slot_label, heure_debut, heure_fin, poste_id: poste_id || '' });
+      }
+      return rows;
+    }
+
+    function onFileChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        csvRows.value  = parseCSV(ev.target.result);
+        csvParsed.value = true;
+      };
+      reader.readAsText(file);
+    }
+
+    function onDrop(e) {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        csvRows.value  = parseCSV(ev.target.result);
+        csvParsed.value = true;
+      };
+      reader.readAsText(file);
+    }
+
+    function cancelImport() {
+      csvRows.value   = [];
+      csvParsed.value = false;
+    }
+
+    async function confirmImport() {
+      if (!csvRows.value.length) return;
+      saving.value = true;
+      try {
+        const result = await apiFetch(`/creneaux/semaine/${currentWeek.value}/batch`, {
+          method: 'POST',
+          body: JSON.stringify({ creneaux: csvRows.value }),
+        });
+        creneaux.value.push(...result.creneaux);
+        showAlert('success', `${result.count} créneaux importés`);
+        cancelImport();
+      } catch (err) {
+        showAlert('error', err.message);
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    function posteLabel(posteId) {
+      const p = postes.value.find(p => p.id === posteId);
+      return p ? p.libelle : '—';
+    }
+
+    return {
+      currentWeek, weekLabel, weekBoundsLabel,
+      creneaux, postes, semaine, loading, saving, alert,
+      form, formErrors,
+      csvRows, csvParsed,
+      PRESETS,
+      prevWeek, nextWeek,
+      addCreneau, applyPreset, deleteCreneau,
+      onFileChange, onDrop, cancelImport, confirmImport,
+      posteLabel,
+    };
+  },
+
+  template: `
+<div>
+  <!-- Alert -->
+  <div v-if="alert" :class="['alert', 'alert-' + alert.type]" style="margin-bottom:16px">
+    <span>{{ alert.type === 'error' ? '✕' : '✓' }}</span>
+    {{ alert.msg }}
+  </div>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div>
+      <h2>Créneaux de la semaine</h2>
+      <p>Définissez les créneaux disponibles pour les extras, puis lancez l'algorithme de planning.</p>
+    </div>
+  </div>
+
+  <!-- Week nav -->
+  <div class="week-nav">
+    <button @click="prevWeek">‹</button>
+    <div>
+      <div class="week-label">{{ weekLabel }}</div>
+      <div class="week-bounds">{{ weekBoundsLabel }}</div>
+    </div>
+    <button @click="nextWeek">›</button>
+    <div class="spacer"></div>
+    <span v-if="loading" style="color:#94a3b8;font-size:13px">Chargement…</span>
+    <span v-else class="status-badge badge-draft">{{ creneaux.length }} créneau(x)</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="value">{{ creneaux.length }}</div>
+      <div class="label">Créneaux définis</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ new Set(creneaux.map(c => c.slot_label)).size }}</div>
+      <div class="label">Libellés distincts</div>
+    </div>
+    <div class="stat">
+      <div class="value">{{ creneaux.filter(c => c.poste_id).length }}</div>
+      <div class="label">Avec poste associé</div>
+    </div>
+  </div>
+
+  <!-- Two columns -->
+  <div class="columns">
+
+    <!-- Left: table créneaux -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Créneaux de la semaine</h3>
+      </div>
+      <div v-if="loading" class="empty-state">
+        <div style="color:#94a3b8">Chargement…</div>
+      </div>
+      <div v-else-if="creneaux.length === 0" class="empty-state">
+        <div class="icon">📅</div>
+        <p>Aucun créneau défini pour cette semaine.</p>
+        <p style="margin-top:4px">Utilisez le formulaire ci-contre pour en ajouter.</p>
+      </div>
+      <table v-else>
+        <thead>
+          <tr>
+            <th>Libellé</th>
+            <th>Horaires</th>
+            <th>Durée</th>
+            <th>Poste</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="c in creneaux" :key="c.id">
+            <td><span class="tag">{{ c.slot_label }}</span></td>
+            <td class="time-range">{{ c.heure_debut }} → {{ c.heure_fin }}</td>
+            <td style="color:#64748b">{{ duration(c.heure_debut, c.heure_fin) }}</td>
+            <td style="color:#475569">{{ posteLabel(c.poste_id) }}</td>
+            <td><button class="btn-icon" @click="deleteCreneau(c.id)" title="Supprimer">✕</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Right: form + import -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Formulaire ajout -->
+      <div class="card">
+        <div class="card-header"><h3>Ajouter un créneau</h3></div>
+        <div class="card-body">
+
+          <div class="form-section">
+            <h4>Présets rapides</h4>
+            <div class="presets">
+              <button v-for="p in PRESETS" :key="p.label" class="preset-btn" @click="applyPreset(p)">
+                {{ p.label }}
+              </button>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>Détails</h4>
+            <div class="form-group" style="margin-bottom:10px">
+              <label>Libellé *</label>
+              <input v-model="form.slot_label" :class="{ error: formErrors.slot_label }"
+                placeholder="ex: Service midi" @keydown.enter="addCreneau" />
+              <span v-if="formErrors.slot_label" class="error-msg">{{ formErrors.slot_label }}</span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Début *</label>
+                <input type="time" v-model="form.heure_debut" :class="{ error: formErrors.heure_debut }" />
+                <span v-if="formErrors.heure_debut" class="error-msg">{{ formErrors.heure_debut }}</span>
+              </div>
+              <div class="form-group">
+                <label>Fin *</label>
+                <input type="time" v-model="form.heure_fin" :class="{ error: formErrors.heure_fin }" />
+                <span v-if="formErrors.heure_fin" class="error-msg">{{ formErrors.heure_fin }}</span>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Poste (optionnel)</label>
+              <select v-model="form.poste_id">
+                <option value="">— Sans poste —</option>
+                <option v-for="p in postes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-full" @click="addCreneau" :disabled="saving">
+              <span v-if="saving" class="spinner"></span>
+              <span v-else>+ Ajouter le créneau</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import CSV -->
+      <div class="card">
+        <div class="card-header"><h3>Import CSV</h3></div>
+        <div class="card-body">
+
+          <div v-if="!csvParsed">
+            <p style="font-size:12px;color:#64748b;margin-bottom:10px">
+              Format : <code>Libellé;08:00;12:00;poste_id_optionnel</code>
+            </p>
+            <label class="import-zone"
+              @dragover.prevent="$event.currentTarget.classList.add('drag-over')"
+              @dragleave="$event.currentTarget.classList.remove('drag-over')"
+              @drop.prevent="(e) => { $event?.currentTarget?.classList?.remove('drag-over'); onDrop(e); }">
+              <input type="file" accept=".csv,.txt" @change="onFileChange" />
+              <div style="font-size:24px;margin-bottom:6px">📂</div>
+              <div>Glissez un fichier CSV ici</div>
+              <div style="font-size:11px;margin-top:4px;color:#94a3b8">ou cliquez pour parcourir</div>
+            </label>
+          </div>
+
+          <div v-else>
+            <div class="alert alert-info">{{ csvRows.length }} ligne(s) détectée(s)</div>
+            <table style="margin-bottom:12px">
+              <thead>
+                <tr><th>Libellé</th><th>Début</th><th>Fin</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="(r, i) in csvRows" :key="i">
+                  <td>{{ r.slot_label }}</td>
+                  <td>{{ r.heure_debut }}</td>
+                  <td>{{ r.heure_fin }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="form-row">
+              <button class="btn btn-secondary btn-sm" @click="cancelImport">Annuler</button>
+              <button class="btn btn-success btn-sm" @click="confirmImport" :disabled="saving" style="flex:1;justify-content:center">
+                <span v-if="saving" class="spinner"></span>
+                <span v-else>Importer {{ csvRows.length }} créneaux</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+  `,
+
+  methods: {
+    duration(debut, fin) {
+      const [dh, dm] = debut.split(':').map(Number);
+      const [fh, fm] = fin.split(':').map(Number);
+      const total = (fh * 60 + fm) - (dh * 60 + dm);
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+    },
+  },
+});
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
+const token = localStorage.getItem('manager_token');
+if (!token) {
+  document.getElementById('app').innerHTML = `
+    <div style="max-width:360px;margin:80px auto">
+      <div class="card">
+        <div class="card-header"><h3>Connexion manager</h3></div>
+        <div class="card-body">
+          <div id="login-error" class="alert alert-error" style="display:none"></div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label>Email</label>
+            <input id="l-email" type="email" placeholder="manager@exemple.fr" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Mot de passe</label>
+            <input id="l-pwd" type="password" />
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-login">Se connecter</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('l-email').value;
+    const pwd   = document.getElementById('l-pwd').value;
+    const errEl = document.getElementById('login-error');
+    try {
+      const res  = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pwd }) });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      localStorage.setItem('manager_token', json.data.token);
+      location.reload();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'flex';
+    }
+  });
+} else {
+  app.mount('#app');
+
+  // Populate header
+  fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(j => {
+      if (!j.ok) { localStorage.removeItem('manager_token'); location.reload(); return; }
+      document.getElementById('manager-name').textContent = j.data.email ?? '';
+    });
+
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    localStorage.removeItem('manager_token');
+    location.reload();
+  });
+}
+</script>
+</body>
+</html>

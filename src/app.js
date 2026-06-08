@@ -1,11 +1,16 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import authRouter from './routes/auth.js';
 import extrasRouter from './routes/extras.js';
 import disponibilitesRouter from './routes/disponibilites.js';
 import planningsRouter from './routes/plannings.js';
 import contratsRouter from './routes/contrats.js';
+import creneauxRouter from './routes/creneaux.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import errorHandler from './middleware/errorHandler.js';
 import logger from './logger.js';
 import { startSendDispoJob } from './jobs/sendDispoLinks.js';
@@ -25,6 +30,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.static(join(__dirname, '..', 'public')));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
@@ -33,6 +39,7 @@ app.use('/extras', extrasRouter);
 app.use('/dispos', disponibilitesRouter);
 app.use('/plannings', planningsRouter);
 app.use('/contrats', contratsRouter);
+app.use('/creneaux', creneauxRouter);
 
 app.use(errorHandler);
 
