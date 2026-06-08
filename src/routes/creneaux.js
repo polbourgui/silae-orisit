@@ -7,6 +7,7 @@ import {
   createCreneau,
   createCreneauxBatch,
   deleteCreneau,
+  JOURS,
 } from '../models/creneauxModel.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
@@ -17,7 +18,10 @@ router.use(requireManagerAuth, siteScope);
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-function validateCreneauFields({ slot_label, heure_debut, heure_fin }) {
+function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin }) {
+  if (!jour || !JOURS.includes(jour)) {
+    throw new ValidationError(`jour doit être parmi : ${JOURS.join(', ')}`);
+  }
   if (!slot_label || typeof slot_label !== 'string' || slot_label.trim().length === 0) {
     throw new ValidationError('slot_label requis');
   }
@@ -46,11 +50,12 @@ router.get('/semaine/:isoWeek', async (req, res, next) => {
 
 router.post('/semaine/:isoWeek', async (req, res, next) => {
   try {
-    assertRequired(req.body, ['slot_label', 'heure_debut', 'heure_fin']);
+    assertRequired(req.body, ['jour', 'slot_label', 'heure_debut', 'heure_fin']);
     validateCreneauFields(req.body);
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
     const creneau = await createCreneau({
       semaineId: semaine.id,
+      jour: req.body.jour,
       slotLabel: req.body.slot_label.trim(),
       heureDebut: req.body.heure_debut,
       heureFin: req.body.heure_fin,

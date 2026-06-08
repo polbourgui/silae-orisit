@@ -14,7 +14,6 @@
       min-height: 100vh;
     }
 
-    /* ── Layout ── */
     header {
       background: #1e40af;
       color: #fff;
@@ -51,23 +50,12 @@
     nav a:hover { background: #f8fafc; color: #1e293b; }
     nav a.active { border-left-color: #1e40af; background: #eff6ff; color: #1e40af; font-weight: 500; }
 
-    main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 32px;
-    }
+    main { flex: 1; overflow-y: auto; padding: 24px 32px; }
 
-    /* ── Page header ── */
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-    }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .page-header h2 { font-size: 20px; font-weight: 600; }
     .page-header p { color: #64748b; margin-top: 2px; font-size: 13px; }
 
-    /* ── Week nav ── */
     .week-nav {
       display: flex;
       align-items: center;
@@ -82,8 +70,7 @@
       background: none;
       border: 1px solid #e2e8f0;
       border-radius: 4px;
-      width: 30px;
-      height: 30px;
+      width: 30px; height: 30px;
       cursor: pointer;
       font-size: 16px;
       line-height: 1;
@@ -93,25 +80,10 @@
     .week-nav .week-label { font-weight: 600; font-size: 15px; min-width: 160px; text-align: center; }
     .week-nav .week-bounds { font-size: 12px; color: #94a3b8; }
     .week-nav .spacer { flex: 1; }
-    .week-nav .status-badge {
-      font-size: 12px;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-weight: 500;
-    }
-    .badge-draft { background: #fef9c3; color: #854d0e; }
-    .badge-published { background: #dcfce7; color: #166534; }
 
-    /* ── Two-column layout ── */
-    .columns { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+    .columns { display: grid; grid-template-columns: 1fr 400px; gap: 20px; align-items: start; }
 
-    /* ── Card ── */
-    .card {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
     .card-header {
       padding: 14px 18px;
       border-bottom: 1px solid #e2e8f0;
@@ -122,7 +94,6 @@
     .card-header h3 { font-size: 14px; font-weight: 600; }
     .card-body { padding: 18px; }
 
-    /* ── Créneau table ── */
     table { width: 100%; border-collapse: collapse; }
     th {
       text-align: left;
@@ -135,14 +106,27 @@
       border-bottom: 1px solid #e2e8f0;
       background: #f8fafc;
     }
-    td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #f1f5f9;
-      font-size: 13px;
-      vertical-align: middle;
-    }
+    td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f8fafc; }
+
+    /* Badges jour */
+    .jour-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+    .jour-lundi    { background: #ede9fe; color: #5b21b6; }
+    .jour-mardi    { background: #fce7f3; color: #9d174d; }
+    .jour-mercredi { background: #e0f2fe; color: #0369a1; }
+    .jour-jeudi    { background: #dcfce7; color: #166534; }
+    .jour-vendredi { background: #fef9c3; color: #713f12; }
+    .jour-samedi   { background: #ffedd5; color: #9a3412; }
+    .jour-dimanche { background: #fee2e2; color: #991b1b; }
 
     .tag {
       display: inline-block;
@@ -150,43 +134,31 @@
       border-radius: 4px;
       font-size: 12px;
       font-weight: 500;
-      background: #e0f2fe;
-      color: #0369a1;
+      background: #f1f5f9;
+      color: #334155;
     }
-    .time-range { font-variant-numeric: tabular-nums; color: #334155; }
+    .time-range { font-variant-numeric: tabular-nums; color: #334155; white-space: nowrap; }
     .btn-icon {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #94a3b8;
-      padding: 4px 6px;
-      border-radius: 4px;
-      font-size: 16px;
-      line-height: 1;
+      background: none; border: none; cursor: pointer;
+      color: #94a3b8; padding: 4px 6px; border-radius: 4px; font-size: 15px; line-height: 1;
     }
     .btn-icon:hover { background: #fee2e2; color: #dc2626; }
 
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #94a3b8;
-    }
+    .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
     .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
-    .empty-state p { font-size: 13px; }
 
-    /* ── Form panel ── */
-    .form-section { margin-bottom: 20px; }
+    /* Formulaire */
+    .form-section { margin-bottom: 18px; }
     .form-section h4 {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: .06em;
-      color: #64748b;
-      margin-bottom: 12px;
+      letter-spacing: .07em;
+      color: #94a3b8;
+      margin-bottom: 10px;
       padding-bottom: 6px;
       border-bottom: 1px solid #f1f5f9;
     }
-
     .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
     .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
     .form-group label { font-size: 12px; font-weight: 500; color: #475569; }
@@ -200,25 +172,49 @@
       width: 100%;
     }
     .form-group input:focus, .form-group select:focus {
-      outline: none;
-      border-color: #3b82f6;
+      outline: none; border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59,130,246,.12);
     }
-    .form-group input.error { border-color: #f87171; }
-    .error-msg { font-size: 11px; color: #dc2626; margin-top: 2px; }
+    .form-group input.error, .form-group select.error { border-color: #f87171; }
+    .error-msg { font-size: 11px; color: #dc2626; }
 
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: 5px;
-      font-size: 13px;
+    /* Sélecteur de jours */
+    .jours-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+    .jour-toggle {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      border: 1px solid transparent;
-      transition: background .12s;
+      color: #64748b;
+      user-select: none;
+      transition: all .1s;
+    }
+    .jour-toggle.selected {
+      border-color: #1e40af;
+      background: #eff6ff;
+      color: #1e40af;
+    }
+
+    /* Presets */
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    .preset-btn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      font-size: 12px;
+      cursor: pointer;
+      color: #475569;
+    }
+    .preset-btn:hover { background: #eff6ff; border-color: #93c5fd; color: #1e40af; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 5px; font-size: 13px;
+      font-weight: 500; cursor: pointer; border: 1px solid transparent;
     }
     .btn-primary { background: #1e40af; color: #fff; }
     .btn-primary:hover { background: #1d4ed8; }
@@ -231,51 +227,24 @@
     .btn-sm { padding: 5px 10px; font-size: 12px; }
     .btn-full { width: 100%; justify-content: center; }
 
-    /* ── Import CSV ── */
     .import-zone {
-      border: 2px dashed #cbd5e1;
-      border-radius: 6px;
-      padding: 16px;
-      text-align: center;
-      cursor: pointer;
-      color: #64748b;
-      font-size: 13px;
-      margin-bottom: 10px;
-      transition: border-color .15s, background .15s;
+      border: 2px dashed #cbd5e1; border-radius: 6px;
+      padding: 16px; text-align: center; cursor: pointer;
+      color: #64748b; font-size: 13px; margin-bottom: 10px;
     }
     .import-zone:hover, .import-zone.drag-over { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
     .import-zone input[type=file] { display: none; }
 
-    /* ── Templates présets ── */
-    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .preset-btn {
-      padding: 5px 10px;
-      border-radius: 4px;
-      border: 1px solid #cbd5e1;
-      background: #f8fafc;
-      font-size: 12px;
-      cursor: pointer;
-      color: #475569;
-    }
-    .preset-btn:hover { background: #eff6ff; border-color: #93c5fd; color: #1e40af; }
-
-    /* ── Alerts ── */
     .alert {
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      padding: 10px 14px; border-radius: 6px; font-size: 13px;
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
     }
-    .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .alert-error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
     .alert-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-    .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .alert-info    { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
-    /* ── Spinner ── */
     .spinner {
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       border: 2px solid rgba(255,255,255,.4);
       border-top-color: #fff;
       border-radius: 50%;
@@ -284,21 +253,22 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Stats bar ── */
-    .stats-bar {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 20px;
-    }
-    .stat {
-      background: #fff;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px 18px;
-      flex: 1;
-    }
-    .stat .value { font-size: 24px; font-weight: 700; color: #1e40af; }
+    .stats-bar { display: flex; gap: 16px; margin-bottom: 20px; }
+    .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; flex: 1; }
+    .stat .value { font-size: 22px; font-weight: 700; color: #1e40af; }
     .stat .label { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+    /* Séparateur de jour dans le tableau */
+    .day-separator td {
+      background: #f8fafc;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: #64748b;
+      border-top: 1px solid #e2e8f0;
+    }
   </style>
 </head>
 <body>
@@ -307,36 +277,42 @@
   <h1>Silae Orisit</h1>
   <span id="site-name">—</span>
   <div class="spacer"></div>
-  <span id="manager-name" style="font-size:13px; opacity:.8; margin-right:8px;"></span>
+  <span id="manager-name" style="font-size:13px;opacity:.8;margin-right:8px"></span>
   <button id="btn-logout">Déconnexion</button>
 </header>
 
 <div class="layout">
   <nav>
     <div class="nav-section">Planning</div>
-    <a href="#creneaux" class="active" id="nav-creneaux">Créneaux semaine</a>
-    <a href="#plannings" id="nav-plannings">Planning & affectations</a>
+    <a href="#creneaux" class="active">Créneaux semaine</a>
+    <a href="#plannings">Planning &amp; affectations</a>
     <div class="nav-section" style="margin-top:12px">Données</div>
-    <a href="#extras" id="nav-extras">Extras</a>
+    <a href="#extras">Extras</a>
   </nav>
-
-  <main id="app">
-    <!-- Injecté par Vue -->
-  </main>
+  <main id="app"><!-- Injecté par Vue --></main>
 </div>
 
 <script type="module">
 import { createApp, ref, computed, watch, onMounted } from '/vendor/vue.esm-browser.js';
 
-const API = '';
+const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const JOURS_COURT = { lundi:'Lun', mardi:'Mar', mercredi:'Mer', jeudi:'Jeu', vendredi:'Ven', samedi:'Sam', dimanche:'Dim' };
+
+const PRESETS = [
+  { label: 'Service midi',  slot_label: 'Service midi',  heure_debut: '11:00', heure_fin: '15:00' },
+  { label: 'Service soir',  slot_label: 'Service soir',  heure_debut: '18:00', heure_fin: '23:00' },
+  { label: 'Journée',       slot_label: 'Journée',        heure_debut: '09:00', heure_fin: '17:00' },
+  { label: 'Matin',         slot_label: 'Matin',          heure_debut: '08:00', heure_fin: '13:00' },
+  { label: 'Après-midi',    slot_label: 'Après-midi',     heure_debut: '13:00', heure_fin: '18:00' },
+];
 
 function authHeader() {
-  const token = localStorage.getItem('manager_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const t = localStorage.getItem('manager_token');
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
 async function apiFetch(path, opts = {}) {
-  const res = await fetch(API + path, {
+  const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json', ...authHeader(), ...opts.headers },
     ...opts,
   });
@@ -345,242 +321,234 @@ async function apiFetch(path, opts = {}) {
   return json.data;
 }
 
-// ── ISO week helpers ──────────────────────────────────────────────────────────
 function isoWeekFromDate(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const day = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - day);
   const y = d.getUTCFullYear();
-  const yearStart = new Date(Date.UTC(y, 0, 1));
-  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return `${y}-W${String(week).padStart(2, '0')}`;
+  const ys = new Date(Date.UTC(y, 0, 1));
+  const w = Math.ceil((((d - ys) / 86400000) + 1) / 7);
+  return `${y}-W${String(w).padStart(2, '0')}`;
 }
 
-function weekBounds(isoWeek) {
-  const [yearStr, weekStr] = isoWeek.split('-W');
-  const year = parseInt(yearStr, 10);
-  const week = parseInt(weekStr, 10);
+function weekBoundsLabel(isoWeek) {
+  const [y, wStr] = isoWeek.split('-W');
+  const year = +y, week = +wStr;
   const jan4 = new Date(Date.UTC(year, 0, 4));
   const start = new Date(jan4);
   start.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
   const end = new Date(start);
   end.setUTCDate(start.getUTCDate() + 6);
-  const fmt = (d) => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
+  const fmt = d => d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
   return `${fmt(start)} → ${fmt(end)}`;
 }
 
 function offsetWeek(isoWeek, delta) {
-  const [yearStr, weekStr] = isoWeek.split('-W');
-  const year = parseInt(yearStr, 10);
-  const week = parseInt(weekStr, 10);
+  const [y, wStr] = isoWeek.split('-W');
+  const year = +y, week = +wStr;
   const jan4 = new Date(Date.UTC(year, 0, 4));
-  const monday = new Date(jan4);
-  monday.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
-  monday.setUTCDate(monday.getUTCDate() + delta * 7);
-  return isoWeekFromDate(monday);
+  const mon = new Date(jan4);
+  mon.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
+  mon.setUTCDate(mon.getUTCDate() + delta * 7);
+  return isoWeekFromDate(mon);
 }
 
-// ── Presets créneaux ──────────────────────────────────────────────────────────
-const PRESETS = [
-  { label: 'Service midi', slot_label: 'Service midi', heure_debut: '11:00', heure_fin: '15:00' },
-  { label: 'Service soir', slot_label: 'Service soir', heure_debut: '18:00', heure_fin: '23:00' },
-  { label: 'Journée complète', slot_label: 'Journée', heure_debut: '09:00', heure_fin: '17:00' },
-  { label: 'Matin', slot_label: 'Matin', heure_debut: '08:00', heure_fin: '13:00' },
-  { label: 'Après-midi', slot_label: 'Après-midi', heure_debut: '13:00', heure_fin: '18:00' },
-];
+function duration(debut, fin) {
+  const [dh, dm] = debut.split(':').map(Number);
+  const [fh, fm] = fin.split(':').map(Number);
+  const total = (fh * 60 + fm) - (dh * 60 + dm);
+  const h = Math.floor(total / 60), m = total % 60;
+  return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+}
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// Groupe les créneaux par jour pour l'affichage
+function groupByJour(creneaux) {
+  const grouped = [];
+  let currentJour = null;
+  for (const c of creneaux) {
+    if (c.jour !== currentJour) {
+      grouped.push({ isSeparator: true, jour: c.jour });
+      currentJour = c.jour;
+    }
+    grouped.push({ isSeparator: false, ...c });
+  }
+  return grouped;
+}
+
 const app = createApp({
   setup() {
     const currentWeek = ref(isoWeekFromDate(new Date()));
     const creneaux    = ref([]);
     const postes      = ref([]);
-    const semaine     = ref(null);
     const loading     = ref(false);
     const saving      = ref(false);
-    const alert       = ref(null);
+    const alertMsg    = ref(null);
 
-    // Form single creneau
-    const form = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '' });
+    const form = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', jours: ['lundi'] });
     const formErrors = ref({});
 
-    // Import CSV preview
     const csvRows   = ref([]);
     const csvParsed = ref(false);
 
     const weekLabel  = computed(() => currentWeek.value.replace('-W', ' — Semaine '));
-    const weekBoundsLabel = computed(() => weekBounds(currentWeek.value));
+    const boundsLabel = computed(() => weekBoundsLabel(currentWeek.value));
+    const tableRows  = computed(() => groupByJour(creneaux.value));
+    const totalHeures = computed(() =>
+      creneaux.value.reduce((sum, c) => {
+        const [dh, dm] = c.heure_debut.split(':').map(Number);
+        const [fh, fm] = c.heure_fin.split(':').map(Number);
+        return sum + ((fh * 60 + fm) - (dh * 60 + dm)) / 60;
+      }, 0).toFixed(1)
+    );
 
     async function loadWeek() {
-      loading.value = true;
-      alert.value = null;
+      loading.value = true; alertMsg.value = null;
       try {
         const data = await apiFetch(`/creneaux/semaine/${currentWeek.value}`);
-        semaine.value  = data.semaine;
         creneaux.value = data.creneaux;
         postes.value   = data.postes;
-      } catch (err) {
-        showAlert('error', err.message);
-      } finally {
-        loading.value = false;
-      }
+      } catch (err) { showAlert('error', err.message); }
+      finally { loading.value = false; }
     }
-
-    function prevWeek() { currentWeek.value = offsetWeek(currentWeek.value, -1); }
-    function nextWeek() { currentWeek.value = offsetWeek(currentWeek.value, +1); }
 
     watch(currentWeek, loadWeek);
     onMounted(loadWeek);
 
     function showAlert(type, msg) {
-      alert.value = { type, msg };
-      setTimeout(() => { alert.value = null; }, 4000);
+      alertMsg.value = { type, msg };
+      setTimeout(() => { alertMsg.value = null; }, 4000);
     }
 
-    // ── Validation form ─────────────────────────────────────────────────────
+    function toggleJour(jour) {
+      const idx = form.value.jours.indexOf(jour);
+      if (idx === -1) form.value.jours.push(jour);
+      else if (form.value.jours.length > 1) form.value.jours.splice(idx, 1);
+    }
+
     function validateForm(f) {
       const errors = {};
       if (!f.slot_label.trim()) errors.slot_label = 'Libellé requis';
-      const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
-      if (!timeRe.test(f.heure_debut)) errors.heure_debut = 'Format HH:MM';
-      if (!timeRe.test(f.heure_fin))   errors.heure_fin   = 'Format HH:MM';
-      if (!errors.heure_debut && !errors.heure_fin && f.heure_debut >= f.heure_fin) {
-        errors.heure_fin = 'Doit être après l\'heure de début';
-      }
+      const re = /^([01]\d|2[0-3]):[0-5]\d$/;
+      if (!re.test(f.heure_debut)) errors.heure_debut = 'Format HH:MM';
+      if (!re.test(f.heure_fin))   errors.heure_fin   = 'Format HH:MM';
+      if (!errors.heure_debut && !errors.heure_fin && f.heure_debut >= f.heure_fin)
+        errors.heure_fin = 'Doit être après le début';
+      if (!f.jours.length) errors.jours = 'Sélectionnez au moins un jour';
       return errors;
     }
 
-    // ── Ajout unitaire ───────────────────────────────────────────────────────
     async function addCreneau() {
       formErrors.value = validateForm(form.value);
       if (Object.keys(formErrors.value).length) return;
       saving.value = true;
       try {
-        const created = await apiFetch(`/creneaux/semaine/${currentWeek.value}`, {
-          method: 'POST',
-          body: JSON.stringify({
-            slot_label:  form.value.slot_label.trim(),
-            heure_debut: form.value.heure_debut,
-            heure_fin:   form.value.heure_fin,
-            poste_id:    form.value.poste_id || null,
-          }),
-        });
-        creneaux.value.push(created);
-        form.value = { slot_label: '', heure_debut: '', heure_fin: '', poste_id: '' };
-        showAlert('success', 'Créneau ajouté');
-      } catch (err) {
-        showAlert('error', err.message);
-      } finally {
-        saving.value = false;
-      }
+        // Un appel par jour sélectionné
+        const toAdd = [...form.value.jours].sort((a, b) => JOURS.indexOf(a) - JOURS.indexOf(b));
+        const created = [];
+        for (const jour of toAdd) {
+          const c = await apiFetch(`/creneaux/semaine/${currentWeek.value}`, {
+            method: 'POST',
+            body: JSON.stringify({
+              jour,
+              slot_label:  form.value.slot_label.trim(),
+              heure_debut: form.value.heure_debut,
+              heure_fin:   form.value.heure_fin,
+              poste_id:    form.value.poste_id || null,
+            }),
+          });
+          created.push(c);
+        }
+        // Insertion triée
+        creneaux.value = [...creneaux.value, ...created].sort((a, b) =>
+          JOURS.indexOf(a.jour) - JOURS.indexOf(b.jour) ||
+          a.heure_debut.localeCompare(b.heure_debut)
+        );
+        const label = toAdd.length > 1 ? `${toAdd.length} créneaux ajoutés` : 'Créneau ajouté';
+        showAlert('success', label);
+        form.value.slot_label = ''; form.value.poste_id = '';
+      } catch (err) { showAlert('error', err.message); }
+      finally { saving.value = false; }
     }
 
-    // ── Preset ──────────────────────────────────────────────────────────────
-    function applyPreset(preset) {
-      form.value.slot_label  = preset.slot_label;
-      form.value.heure_debut = preset.heure_debut;
-      form.value.heure_fin   = preset.heure_fin;
+    function applyPreset(p) {
+      form.value.slot_label  = p.slot_label;
+      form.value.heure_debut = p.heure_debut;
+      form.value.heure_fin   = p.heure_fin;
       formErrors.value = {};
     }
 
-    // ── Suppression ─────────────────────────────────────────────────────────
     async function deleteCreneau(id) {
       if (!confirm('Supprimer ce créneau ?')) return;
       try {
         await apiFetch(`/creneaux/semaine/${currentWeek.value}/${id}`, { method: 'DELETE' });
         creneaux.value = creneaux.value.filter(c => c.id !== id);
         showAlert('success', 'Créneau supprimé');
-      } catch (err) {
-        showAlert('error', err.message);
-      }
+      } catch (err) { showAlert('error', err.message); }
     }
 
-    // ── Import CSV ───────────────────────────────────────────────────────────
     function parseCSV(text) {
-      const lines = text.trim().split('\n').filter(l => l.trim());
-      const rows  = [];
-      for (const line of lines) {
-        const parts = line.split(';').map(s => s.trim().replace(/^"|"$/g, ''));
-        if (parts.length < 3) continue;
-        const [slot_label, heure_debut, heure_fin, poste_id] = parts;
-        rows.push({ slot_label, heure_debut, heure_fin, poste_id: poste_id || '' });
-      }
-      return rows;
+      return text.trim().split('\n').filter(l => l.trim()).map(line => {
+        const [jour, slot_label, heure_debut, heure_fin, poste_id] =
+          line.split(';').map(s => s.trim().replace(/^"|"$/g, ''));
+        return { jour: jour || 'lundi', slot_label, heure_debut, heure_fin, poste_id: poste_id || '' };
+      }).filter(r => r.slot_label);
     }
 
     function onFileChange(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        csvRows.value  = parseCSV(ev.target.result);
-        csvParsed.value = true;
-      };
-      reader.readAsText(file);
+      const f = e.target.files[0]; if (!f) return;
+      new FileReader().onload = ev => { csvRows.value = parseCSV(ev.target.result); csvParsed.value = true; };
+      const r = new FileReader(); r.onload = ev => { csvRows.value = parseCSV(ev.target.result); csvParsed.value = true; }; r.readAsText(f);
     }
 
     function onDrop(e) {
       e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        csvRows.value  = parseCSV(ev.target.result);
-        csvParsed.value = true;
-      };
-      reader.readAsText(file);
+      const f = e.dataTransfer.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = ev => { csvRows.value = parseCSV(ev.target.result); csvParsed.value = true; }; r.readAsText(f);
     }
 
-    function cancelImport() {
-      csvRows.value   = [];
-      csvParsed.value = false;
-    }
+    function cancelImport() { csvRows.value = []; csvParsed.value = false; }
 
     async function confirmImport() {
-      if (!csvRows.value.length) return;
       saving.value = true;
       try {
         const result = await apiFetch(`/creneaux/semaine/${currentWeek.value}/batch`, {
           method: 'POST',
           body: JSON.stringify({ creneaux: csvRows.value }),
         });
-        creneaux.value.push(...result.creneaux);
+        creneaux.value = [...creneaux.value, ...result.creneaux].sort((a, b) =>
+          JOURS.indexOf(a.jour) - JOURS.indexOf(b.jour) ||
+          a.heure_debut.localeCompare(b.heure_debut)
+        );
         showAlert('success', `${result.count} créneaux importés`);
         cancelImport();
-      } catch (err) {
-        showAlert('error', err.message);
-      } finally {
-        saving.value = false;
-      }
+      } catch (err) { showAlert('error', err.message); }
+      finally { saving.value = false; }
     }
 
     function posteLabel(posteId) {
-      const p = postes.value.find(p => p.id === posteId);
-      return p ? p.libelle : '—';
+      return postes.value.find(p => p.id === posteId)?.libelle ?? '—';
     }
 
     return {
-      currentWeek, weekLabel, weekBoundsLabel,
-      creneaux, postes, semaine, loading, saving, alert,
+      JOURS, JOURS_COURT, PRESETS,
+      currentWeek, weekLabel, boundsLabel,
+      creneaux, tableRows, postes, loading, saving, alertMsg,
       form, formErrors,
-      csvRows, csvParsed,
-      PRESETS,
-      prevWeek, nextWeek,
-      addCreneau, applyPreset, deleteCreneau,
+      csvRows, csvParsed, totalHeures,
+      prevWeek: () => { currentWeek.value = offsetWeek(currentWeek.value, -1); },
+      nextWeek: () => { currentWeek.value = offsetWeek(currentWeek.value, +1); },
+      toggleJour, addCreneau, applyPreset, deleteCreneau,
       onFileChange, onDrop, cancelImport, confirmImport,
-      posteLabel,
+      posteLabel, duration,
     };
   },
 
   template: `
 <div>
-  <!-- Alert -->
-  <div v-if="alert" :class="['alert', 'alert-' + alert.type]" style="margin-bottom:16px">
-    <span>{{ alert.type === 'error' ? '✕' : '✓' }}</span>
-    {{ alert.msg }}
+  <div v-if="alertMsg" :class="['alert','alert-'+alertMsg.type]">
+    <span>{{ alertMsg.type === 'error' ? '✕' : '✓' }}</span>{{ alertMsg.msg }}
   </div>
 
-  <!-- Page header -->
   <div class="page-header">
     <div>
       <h2>Créneaux de la semaine</h2>
@@ -588,54 +556,50 @@ const app = createApp({
     </div>
   </div>
 
-  <!-- Week nav -->
   <div class="week-nav">
     <button @click="prevWeek">‹</button>
     <div>
       <div class="week-label">{{ weekLabel }}</div>
-      <div class="week-bounds">{{ weekBoundsLabel }}</div>
+      <div class="week-bounds">{{ boundsLabel }}</div>
     </div>
     <button @click="nextWeek">›</button>
     <div class="spacer"></div>
     <span v-if="loading" style="color:#94a3b8;font-size:13px">Chargement…</span>
-    <span v-else class="status-badge badge-draft">{{ creneaux.length }} créneau(x)</span>
+    <span v-else style="font-size:13px;color:#64748b">{{ creneaux.length }} créneau(x) · {{ totalHeures }}h total</span>
   </div>
 
-  <!-- Stats -->
   <div class="stats-bar">
     <div class="stat">
       <div class="value">{{ creneaux.length }}</div>
       <div class="label">Créneaux définis</div>
     </div>
     <div class="stat">
-      <div class="value">{{ new Set(creneaux.map(c => c.slot_label)).size }}</div>
-      <div class="label">Libellés distincts</div>
+      <div class="value">{{ new Set(creneaux.map(c => c.jour)).size }}</div>
+      <div class="label">Jours couverts</div>
     </div>
     <div class="stat">
-      <div class="value">{{ creneaux.filter(c => c.poste_id).length }}</div>
-      <div class="label">Avec poste associé</div>
+      <div class="value">{{ totalHeures }}h</div>
+      <div class="label">Heures à pourvoir</div>
     </div>
   </div>
 
-  <!-- Two columns -->
   <div class="columns">
 
-    <!-- Left: table créneaux -->
+    <!-- Tableau créneaux -->
     <div class="card">
       <div class="card-header">
-        <h3>Créneaux de la semaine</h3>
+        <h3>Créneaux</h3>
       </div>
-      <div v-if="loading" class="empty-state">
-        <div style="color:#94a3b8">Chargement…</div>
-      </div>
+      <div v-if="loading" class="empty-state" style="padding:32px">Chargement…</div>
       <div v-else-if="creneaux.length === 0" class="empty-state">
         <div class="icon">📅</div>
-        <p>Aucun créneau défini pour cette semaine.</p>
-        <p style="margin-top:4px">Utilisez le formulaire ci-contre pour en ajouter.</p>
+        <p>Aucun créneau pour cette semaine.</p>
+        <p style="margin-top:4px;font-size:12px">Utilisez le formulaire pour en ajouter.</p>
       </div>
       <table v-else>
         <thead>
           <tr>
+            <th>Jour</th>
             <th>Libellé</th>
             <th>Horaires</th>
             <th>Durée</th>
@@ -644,21 +608,27 @@ const app = createApp({
           </tr>
         </thead>
         <tbody>
-          <tr v-for="c in creneaux" :key="c.id">
-            <td><span class="tag">{{ c.slot_label }}</span></td>
-            <td class="time-range">{{ c.heure_debut }} → {{ c.heure_fin }}</td>
-            <td style="color:#64748b">{{ duration(c.heure_debut, c.heure_fin) }}</td>
-            <td style="color:#475569">{{ posteLabel(c.poste_id) }}</td>
-            <td><button class="btn-icon" @click="deleteCreneau(c.id)" title="Supprimer">✕</button></td>
-          </tr>
+          <template v-for="row in tableRows" :key="row.isSeparator ? 'sep-'+row.jour : row.id">
+            <tr v-if="row.isSeparator" class="day-separator">
+              <td colspan="6">{{ row.jour }}</td>
+            </tr>
+            <tr v-else>
+              <td><span :class="['jour-badge','jour-'+row.jour]">{{ JOURS_COURT[row.jour] }}</span></td>
+              <td>{{ row.slot_label }}</td>
+              <td class="time-range">{{ row.heure_debut }} → {{ row.heure_fin }}</td>
+              <td style="color:#64748b">{{ duration(row.heure_debut, row.heure_fin) }}</td>
+              <td style="color:#475569;font-size:12px">{{ posteLabel(row.poste_id) }}</td>
+              <td><button class="btn-icon" @click="deleteCreneau(row.id)" title="Supprimer">✕</button></td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
 
-    <!-- Right: form + import -->
+    <!-- Panneau droit -->
     <div style="display:flex;flex-direction:column;gap:16px">
 
-      <!-- Formulaire ajout -->
+      <!-- Formulaire -->
       <div class="card">
         <div class="card-header"><h3>Ajouter un créneau</h3></div>
         <div class="card-body">
@@ -666,9 +636,22 @@ const app = createApp({
           <div class="form-section">
             <h4>Présets rapides</h4>
             <div class="presets">
-              <button v-for="p in PRESETS" :key="p.label" class="preset-btn" @click="applyPreset(p)">
-                {{ p.label }}
-              </button>
+              <button v-for="p in PRESETS" :key="p.label" class="preset-btn" @click="applyPreset(p)">{{ p.label }}</button>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h4>Jours *</h4>
+            <div class="jours-picker">
+              <span
+                v-for="j in JOURS" :key="j"
+                :class="['jour-toggle', { selected: form.jours.includes(j) }]"
+                @click="toggleJour(j)"
+              >{{ JOURS_COURT[j] }}</span>
+            </div>
+            <div v-if="formErrors.jours" class="error-msg" style="margin-top:4px">{{ formErrors.jours }}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:6px">
+              {{ form.jours.length > 1 ? form.jours.length + ' créneaux seront créés' : '' }}
             </div>
           </div>
 
@@ -701,9 +684,12 @@ const app = createApp({
             </div>
             <button class="btn btn-primary btn-full" @click="addCreneau" :disabled="saving">
               <span v-if="saving" class="spinner"></span>
-              <span v-else>+ Ajouter le créneau</span>
+              <span v-else>
+                + {{ form.jours.length > 1 ? 'Ajouter ' + form.jours.length + ' créneaux' : 'Ajouter le créneau' }}
+              </span>
             </button>
           </div>
+
         </div>
       </div>
 
@@ -711,33 +697,28 @@ const app = createApp({
       <div class="card">
         <div class="card-header"><h3>Import CSV</h3></div>
         <div class="card-body">
-
           <div v-if="!csvParsed">
             <p style="font-size:12px;color:#64748b;margin-bottom:10px">
-              Format : <code>Libellé;08:00;12:00;poste_id_optionnel</code>
+              Format : <code>jour;Libellé;08:00;12:00</code>
             </p>
             <label class="import-zone"
               @dragover.prevent="$event.currentTarget.classList.add('drag-over')"
               @dragleave="$event.currentTarget.classList.remove('drag-over')"
-              @drop.prevent="(e) => { $event?.currentTarget?.classList?.remove('drag-over'); onDrop(e); }">
+              @drop.prevent="(e) => { e.currentTarget.classList.remove('drag-over'); onDrop(e); }">
               <input type="file" accept=".csv,.txt" @change="onFileChange" />
               <div style="font-size:24px;margin-bottom:6px">📂</div>
               <div>Glissez un fichier CSV ici</div>
               <div style="font-size:11px;margin-top:4px;color:#94a3b8">ou cliquez pour parcourir</div>
             </label>
           </div>
-
           <div v-else>
             <div class="alert alert-info">{{ csvRows.length }} ligne(s) détectée(s)</div>
             <table style="margin-bottom:12px">
-              <thead>
-                <tr><th>Libellé</th><th>Début</th><th>Fin</th></tr>
-              </thead>
+              <thead><tr><th>Jour</th><th>Libellé</th><th>Début</th><th>Fin</th></tr></thead>
               <tbody>
-                <tr v-for="(r, i) in csvRows" :key="i">
-                  <td>{{ r.slot_label }}</td>
-                  <td>{{ r.heure_debut }}</td>
-                  <td>{{ r.heure_fin }}</td>
+                <tr v-for="(r,i) in csvRows" :key="i">
+                  <td><span :class="['jour-badge','jour-'+r.jour]">{{ JOURS_COURT[r.jour] ?? r.jour }}</span></td>
+                  <td>{{ r.slot_label }}</td><td>{{ r.heure_debut }}</td><td>{{ r.heure_fin }}</td>
                 </tr>
               </tbody>
             </table>
@@ -756,20 +737,9 @@ const app = createApp({
   </div>
 </div>
   `,
-
-  methods: {
-    duration(debut, fin) {
-      const [dh, dm] = debut.split(':').map(Number);
-      const [fh, fm] = fin.split(':').map(Number);
-      const total = (fh * 60 + fm) - (dh * 60 + dm);
-      const h = Math.floor(total / 60);
-      const m = total % 60;
-      return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
-    },
-  },
 });
 
-// ── Auth guard ────────────────────────────────────────────────────────────────
+// ── Auth guard — monte Vue seulement si token présent ─────────────────────────
 const token = localStorage.getItem('manager_token');
 if (!token) {
   document.getElementById('app').innerHTML = `
@@ -779,47 +749,37 @@ if (!token) {
         <div class="card-body">
           <div id="login-error" class="alert alert-error" style="display:none"></div>
           <div class="form-group" style="margin-bottom:10px">
-            <label>Email</label>
-            <input id="l-email" type="email" placeholder="manager@exemple.fr" />
+            <label>Email</label><input id="l-email" type="email" placeholder="manager@exemple.fr" />
           </div>
           <div class="form-group" style="margin-bottom:14px">
-            <label>Mot de passe</label>
-            <input id="l-pwd" type="password" />
+            <label>Mot de passe</label><input id="l-pwd" type="password" />
           </div>
           <button class="btn btn-primary btn-full" id="btn-login">Se connecter</button>
         </div>
       </div>
     </div>`;
-
   document.getElementById('btn-login').addEventListener('click', async () => {
     const email = document.getElementById('l-email').value;
     const pwd   = document.getElementById('l-pwd').value;
     const errEl = document.getElementById('login-error');
     try {
-      const res  = await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pwd }) });
+      const res  = await fetch('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password:pwd}) });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error);
       localStorage.setItem('manager_token', json.data.token);
       location.reload();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'flex';
-    }
+    } catch(err) { errEl.textContent = err.message; errEl.style.display = 'flex'; }
   });
 } else {
   app.mount('#app');
-
-  // Populate header
   fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
     .then(r => r.json())
     .then(j => {
       if (!j.ok) { localStorage.removeItem('manager_token'); location.reload(); return; }
       document.getElementById('manager-name').textContent = j.data.email ?? '';
     });
-
   document.getElementById('btn-logout').addEventListener('click', () => {
-    localStorage.removeItem('manager_token');
-    location.reload();
+    localStorage.removeItem('manager_token'); location.reload();
   });
 }
 </script>

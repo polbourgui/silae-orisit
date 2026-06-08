@@ -1,21 +1,28 @@
 import pool from './db.js';
 
-const CRENEAU_COLS = 'id, semaine_id, slot_label, heure_debut, heure_fin, poste_id';
+const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const JOUR_ORDER = Object.fromEntries(JOURS.map((j, i) => [j, i]));
+const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id';
+
+export { JOURS };
 
 export async function findCreneauxBySemaine(semaineId) {
   const { rows } = await pool.query(
-    `SELECT ${CRENEAU_COLS} FROM creneaux WHERE semaine_id = $1 ORDER BY heure_debut`,
+    `SELECT ${CRENEAU_COLS} FROM creneaux WHERE semaine_id = $1`,
     [semaineId]
   );
-  return rows;
+  return rows.sort((a, b) =>
+    (JOUR_ORDER[a.jour] ?? 9) - (JOUR_ORDER[b.jour] ?? 9) ||
+    a.heure_debut.localeCompare(b.heure_debut)
+  );
 }
 
-export async function createCreneau({ semaineId, slotLabel, heureDebut, heureFin, posteId }) {
+export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId }) {
   const { rows } = await pool.query(
-    `INSERT INTO creneaux (semaine_id, slot_label, heure_debut, heure_fin, poste_id)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${CRENEAU_COLS}`,
-    [semaineId, slotLabel, heureDebut, heureFin, posteId ?? null]
+    [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null]
   );
   return rows[0];
 }
@@ -27,10 +34,10 @@ export async function createCreneauxBatch(semaineId, creneaux) {
     const inserted = [];
     for (const c of creneaux) {
       const { rows } = await client.query(
-        `INSERT INTO creneaux (semaine_id, slot_label, heure_debut, heure_fin, poste_id)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING ${CRENEAU_COLS}`,
-        [semaineId, c.slot_label, c.heure_debut, c.heure_fin, c.poste_id ?? null]
+        [semaineId, c.jour ?? 'lundi', c.slot_label, c.heure_debut, c.heure_fin, c.poste_id ?? null]
       );
       inserted.push(rows[0]);
     }
