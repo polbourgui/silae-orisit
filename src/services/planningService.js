@@ -45,19 +45,25 @@ export function greedyScheduler(extras, creneaux, disponibilites) {
   // Extras ayant soumis au moins une dispo (ont répondu)
   const extrasHavingResponded = new Set(disponibilites.map((d) => d.extra_id));
 
+  // Score de tri : poste correspondant = -1000 (priorité maximale), puis heures croissantes
+  const sortScore = (extra, creneauPosteId) => {
+    const hasMatchingPoste = creneauPosteId && (extra.poste_ids ?? []).includes(creneauPosteId);
+    return (hasMatchingPoste ? -1000 : 0) + (hoursAssigned.get(extra.id) ?? 0);
+  };
+
   // Priorité : 1) dispo explicite, 2) pas répondu, 3) non dispo (exclus)
-  const candidatesForCreneau = (creneauId) => {
+  const candidatesForCreneau = (creneauId, creneauPosteId) => {
     const dispoIds = new Set(
       disponibilites.filter((d) => d.creneau_id === creneauId).map((d) => d.extra_id)
     );
     const dispo     = extras.filter((e) => dispoIds.has(e.id));
     const noReponse = extras.filter((e) => !extrasHavingResponded.has(e.id));
-    const byHours   = (a, b) => (hoursAssigned.get(a.id) ?? 0) - (hoursAssigned.get(b.id) ?? 0);
-    return [...dispo.sort(byHours), ...noReponse.sort(byHours)];
+    const byScore   = (a, b) => sortScore(a, creneauPosteId) - sortScore(b, creneauPosteId);
+    return [...dispo.sort(byScore), ...noReponse.sort(byScore)];
   };
 
   for (const creneau of creneaux) {
-    const candidates = candidatesForCreneau(creneau.id);
+    const candidates = candidatesForCreneau(creneau.id, creneau.poste_id);
     for (const extra of candidates) {
       if (assignedPerExtra.get(extra.id).some((c) => c.id === creneau.id)) continue;
       if (violatesRestRule(assignedPerExtra.get(extra.id), creneau)) continue;

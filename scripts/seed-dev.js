@@ -38,6 +38,23 @@ await pool.query(`
 `, [SITE_ID, hash]);
 console.log('✓ Manager  admin@test.fr / test1234');
 
+// ── Postes ───────────────────────────────────────────────────────────────────
+const postesData = [
+  'Chef·fe de rang', 'Barman·maid', 'Runner', 'Responsable', 'Vestiaire', 'Billetterie',
+];
+const postes = [];
+for (const libelle of postesData) {
+  const { rows } = await pool.query(
+    `INSERT INTO postes (site_id, libelle)
+     VALUES ($1, $2)
+     ON CONFLICT (site_id, libelle) DO UPDATE SET libelle = EXCLUDED.libelle
+     RETURNING id, libelle`,
+    [SITE_ID, libelle]
+  );
+  postes.push(rows[0]);
+}
+console.log(`✓ ${postes.length} postes`);
+
 // ── Extras ───────────────────────────────────────────────────────────────────
 const extrasData = [
   { matricule: 'M001', nom: 'Dupont',  prenom: 'Marc',   email: 'marc@test.fr' },
@@ -57,6 +74,23 @@ for (const e of extrasData) {
   extras.push(rows[0]);
 }
 console.log(`✓ ${extras.length} extras`);
+
+// Associer des postes aux extras (indices dans postesData)
+const extraPostes = [
+  [0, 2],       // Marc : Chef de rang, Runner
+  [1, 2],       // Laura : Barman, Runner
+  [0, 3],       // Sophie : Chef de rang, Responsable
+  [4],          // Romain : Vestiaire
+  [5, 1],       // Chloé : Billetterie, Barman
+];
+for (let i = 0; i < extras.length; i++) {
+  const ids = (extraPostes[i] ?? []).map(pi => postes[pi]?.id).filter(Boolean);
+  await pool.query('DELETE FROM extras_postes WHERE extra_id = $1 AND site_id = $2', [extras[i].id, SITE_ID]);
+  for (const pid of ids) {
+    await pool.query('INSERT INTO extras_postes (extra_id, poste_id, site_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [extras[i].id, pid, SITE_ID]);
+  }
+}
+console.log('✓ compétences extras associées');
 
 // ── Semaine ──────────────────────────────────────────────────────────────────
 const { rows: semRows } = await pool.query(`

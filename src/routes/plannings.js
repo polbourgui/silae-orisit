@@ -8,6 +8,7 @@ import {
 } from '../models/planningsModel.js';
 import { findCreneauxBySemaine } from '../models/creneauxModel.js';
 import { findExtrasBySite } from '../models/extrasModel.js';
+import { getPostesByExtras } from '../models/postesModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
 import { greedyScheduler } from '../services/planningService.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
@@ -34,10 +35,12 @@ router.get('/week/:isoWeek', async (req, res, next) => {
       dispoIndex[d.extra_id].add(d.creneau_id);
     }
 
-    // Enrichir extras avec leurs dispos pour la semaine
+    const postesMap = await getPostesByExtras(extras.map(e => e.id), req.siteId);
+
     const extrasWithDispos = extras.map(e => ({
       ...e,
       dispo_creneau_ids: [...(dispoIndex[e.id] ?? [])],
+      poste_ids: postesMap[e.id] ?? [],
     }));
 
     res.json({ ok: true, data: { semaine, creneaux, extras: extrasWithDispos, planning, affectations } });
@@ -53,6 +56,8 @@ router.post('/week/:isoWeek/propose', async (req, res, next) => {
     const creneaux = await findCreneauxBySemaine(semaine.id);
     const extras   = await findExtrasBySite(req.siteId);
     const dispos   = await findDisponibilites(semaine.id, req.siteId);
+    const postesMap = await getPostesByExtras(extras.map(e => e.id), req.siteId);
+    const extrasWithPostes = extras.map(e => ({ ...e, poste_ids: postesMap[e.id] ?? [] }));
 
     if (!creneaux.length) throw new ValidationError('Aucun créneau défini pour cette semaine');
 
@@ -62,7 +67,7 @@ router.post('/week/:isoWeek/propose', async (req, res, next) => {
 
     await clearAffectations(planning.id, req.siteId);
 
-    const proposals = greedyScheduler(extras, creneaux, dispos);
+    const proposals = greedyScheduler(extrasWithPostes, creneaux, dispos);
     for (const { extra_id, creneau_id } of proposals) {
       await createAffectation(planning.id, extra_id, creneau_id, req.siteId);
     }
