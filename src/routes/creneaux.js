@@ -28,8 +28,8 @@ function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin }) {
   if (!TIME_RE.test(heure_debut) || !TIME_RE.test(heure_fin)) {
     throw new ValidationError('heure_debut et heure_fin doivent être au format HH:MM');
   }
-  if (heure_debut >= heure_fin) {
-    throw new ValidationError('heure_debut doit être avant heure_fin');
+  if (heure_debut === heure_fin) {
+    throw new ValidationError('heure_debut et heure_fin ne peuvent pas être identiques');
   }
 }
 
