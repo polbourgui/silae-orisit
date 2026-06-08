@@ -47,3 +47,25 @@ export async function createAffectation(planningId, extraId, creneauId, siteId) 
   );
   return rows[0] ?? null;
 }
+
+export async function upsertAffectation(planningId, creneauId, extraId, siteId) {
+  await pool.query(
+    'DELETE FROM affectations WHERE planning_id = $1 AND creneau_id = $2 AND site_id = $3',
+    [planningId, creneauId, siteId]
+  );
+  if (!extraId) return null;
+  const { rows } = await pool.query(
+    `INSERT INTO affectations (planning_id, extra_id, creneau_id, site_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING ${AFFECTATION_COLS}`,
+    [planningId, extraId, creneauId, siteId]
+  );
+  return rows[0];
+}
+
+export async function clearAffectations(planningId, siteId) {
+  await pool.query(
+    'DELETE FROM affectations WHERE planning_id = $1 AND site_id = $2',
+    [planningId, siteId]
+  );
+}

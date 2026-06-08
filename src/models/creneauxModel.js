@@ -6,15 +6,21 @@ const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, 
 
 export { JOURS };
 
+function normalizeTime(t) {
+  return t ? t.slice(0, 5) : t;
+}
+
 export async function findCreneauxBySemaine(semaineId) {
   const { rows } = await pool.query(
     `SELECT ${CRENEAU_COLS} FROM creneaux WHERE semaine_id = $1`,
     [semaineId]
   );
-  return rows.sort((a, b) =>
-    (JOUR_ORDER[a.jour] ?? 9) - (JOUR_ORDER[b.jour] ?? 9) ||
-    a.heure_debut.localeCompare(b.heure_debut)
-  );
+  return rows
+    .map(r => ({ ...r, heure_debut: normalizeTime(r.heure_debut), heure_fin: normalizeTime(r.heure_fin) }))
+    .sort((a, b) =>
+      (JOUR_ORDER[a.jour] ?? 9) - (JOUR_ORDER[b.jour] ?? 9) ||
+      a.heure_debut.localeCompare(b.heure_debut)
+    );
 }
 
 export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId }) {
