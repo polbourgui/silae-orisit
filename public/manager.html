@@ -391,17 +391,6 @@ import { createApp, ref, computed, watch, onMounted } from '/vendor/vue.esm-brow
 const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
 const JOURS_COURT = { lundi:'Lun', mardi:'Mar', mercredi:'Mer', jeudi:'Jeu', vendredi:'Ven', samedi:'Sam', dimanche:'Dim' };
 
-// Présets chargés depuis l'API (remplace la constante statique)
-const PRESETS_DEFAULT = [
-  { label: 'Service midi',  slot_label: 'Service midi',  heure_debut: '11:00', heure_fin: '15:00' },
-  { label: 'Service soir',  slot_label: 'Service soir',  heure_debut: '18:00', heure_fin: '23:00' },
-  { label: 'Nuit',          slot_label: 'Nuit',          heure_debut: '22:30', heure_fin: '06:00' },
-  { label: 'Journée',       slot_label: 'Journée',       heure_debut: '09:00', heure_fin: '17:00' },
-  { label: 'Matin',         slot_label: 'Matin',         heure_debut: '08:00', heure_fin: '13:00' },
-  { label: 'Après-midi',    slot_label: 'Après-midi',    heure_debut: '13:00', heure_fin: '18:00' },
-  { label: 'Coupure midi',  slot_label: 'Coupure midi',  heure_debut: '11:00', heure_fin: '14:30' },
-  { label: 'Coupure soir',  slot_label: 'Coupure soir',  heure_debut: '19:00', heure_fin: '23:30' },
-];
 
 function authHeader() {
   const t = localStorage.getItem('manager_token');
@@ -637,10 +626,8 @@ const app = createApp({
     const presetSaving    = ref(false);
 
     async function loadPresets() {
-      try {
-        const data = await apiFetch('/presets');
-        presets.value = data.length ? data : PRESETS_DEFAULT;
-      } catch { presets.value = PRESETS_DEFAULT; }
+      try { presets.value = await apiFetch('/presets'); }
+      catch (err) { showAlert('error', err.message); }
     }
 
     async function addPreset() {
@@ -1038,9 +1025,8 @@ const app = createApp({
                 style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f1f5f9">
                 <span style="flex:1;font-size:13px">{{ p.label }}</span>
                 <span style="font-size:11px;color:#94a3b8;font-family:monospace">{{ p.heure_debut }}–{{ p.heure_fin }}</span>
-                <button v-if="p.id" class="btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:2px 8px"
+                <button class="btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:2px 8px"
                   @click="removePreset(p.id)">✕</button>
-                <span v-else style="font-size:10px;color:#94a3b8;font-style:italic">défaut</span>
               </div>
               <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
                 <input v-model="presetForm.label" placeholder="Nom (ex: Brunch)" type="text"
