@@ -1,28 +1,25 @@
 const REST_MINUTES_REQUIRED = 11 * 60;
+const JOURS_ORDER = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
-/**
- * Parses "HH:MM" into minutes since midnight
- * @param {string} timeStr
- * @returns {number}
- */
 function timeToMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
 
-/**
- * Checks if an extra already has a creneau overlapping the 11h rest rule
- * @param {object[]} assignedCreneaux
- * @param {object} creneau
- * @returns {boolean}
- */
+// Retourne les minutes absolues depuis lundi 00:00, en tenant compte des shifts de nuit
+function absoluteMinutes(jour, heureDebut, heureFin) {
+  const dayOffset = (JOURS_ORDER.indexOf(jour) ?? 0) * 24 * 60;
+  const start = dayOffset + timeToMinutes(heureDebut);
+  let end = dayOffset + timeToMinutes(heureFin);
+  if (end <= start) end += 24 * 60; // shift de nuit (ex. 22:30 → 06:00)
+  return { start, end };
+}
+
 function violatesRestRule(assignedCreneaux, creneau) {
-  const newStart = timeToMinutes(creneau.heure_debut);
-  const newEnd = timeToMinutes(creneau.heure_fin);
+  const { start: newStart, end: newEnd } = absoluteMinutes(creneau.jour, creneau.heure_debut, creneau.heure_fin);
   for (const c of assignedCreneaux) {
-    const existStart = timeToMinutes(c.heure_debut);
-    const existEnd = timeToMinutes(c.heure_fin);
-    const gapAfter = newStart - existEnd;
+    const { start: existStart, end: existEnd } = absoluteMinutes(c.jour, c.heure_debut, c.heure_fin);
+    const gapAfter  = newStart - existEnd;
     const gapBefore = existStart - newEnd;
     const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED || gapBefore >= REST_MINUTES_REQUIRED;
     if (!hasEnoughRest) return true;
@@ -43,28 +40,30 @@ function violatesRestRule(assignedCreneaux, creneau) {
 export function greedyScheduler(extras, creneaux, disponibilites) {
   const hoursAssigned = new Map(extras.map((e) => [e.id, 0]));
   const assignedPerExtra = new Map(extras.map((e) => [e.id, []]));
-  const bookedCreneaux = new Set();
   const result = [];
 
-  const availableExtrasForCreneau = (creneauId) => {
-    const dispoExtraIds = new Set(
+  // Extras ayant soumis au moins une dispo (ont répondu)
+  const extrasHavingResponded = new Set(disponibilites.map((d) => d.extra_id));
+
+  // Priorité : 1) dispo explicite, 2) pas répondu, 3) non dispo (exclus)
+  const candidatesForCreneau = (creneauId) => {
+    const dispoIds = new Set(
       disponibilites.filter((d) => d.creneau_id === creneauId).map((d) => d.extra_id)
     );
-    return extras
-      .filter((e) => dispoExtraIds.has(e.id))
-      .sort((a, b) => (hoursAssigned.get(a.id) ?? 0) - (hoursAssigned.get(b.id) ?? 0));
+    const dispo     = extras.filter((e) => dispoIds.has(e.id));
+    const noReponse = extras.filter((e) => !extrasHavingResponded.has(e.id));
+    const byHours   = (a, b) => (hoursAssigned.get(a.id) ?? 0) - (hoursAssigned.get(b.id) ?? 0);
+    return [...dispo.sort(byHours), ...noReponse.sort(byHours)];
   };
 
   for (const creneau of creneaux) {
-    const candidates = availableExtrasForCreneau(creneau.id);
+    const candidates = candidatesForCreneau(creneau.id);
     for (const extra of candidates) {
-      const alreadyBooked = assignedPerExtra.get(extra.id).some((c) => c.id === creneau.id);
-      if (alreadyBooked) continue;
+      if (assignedPerExtra.get(extra.id).some((c) => c.id === creneau.id)) continue;
       if (violatesRestRule(assignedPerExtra.get(extra.id), creneau)) continue;
       const durationH = (timeToMinutes(creneau.heure_fin) - timeToMinutes(creneau.heure_debut)) / 60;
       hoursAssigned.set(extra.id, (hoursAssigned.get(extra.id) ?? 0) + durationH);
       assignedPerExtra.get(extra.id).push(creneau);
-      bookedCreneaux.add(creneau.id);
       result.push({ extra_id: extra.id, creneau_id: creneau.id });
       break;
     }
