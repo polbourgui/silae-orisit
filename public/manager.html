@@ -442,7 +442,8 @@ function offsetWeek(isoWeek, delta) {
 function duration(debut, fin) {
   const [dh, dm] = debut.split(':').map(Number);
   const [fh, fm] = fin.split(':').map(Number);
-  const total = (fh * 60 + fm) - (dh * 60 + dm);
+  let total = (fh * 60 + fm) - (dh * 60 + dm);
+  if (total <= 0) total += 24 * 60; // shift de nuit
   const h = Math.floor(total / 60), m = total % 60;
   return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
 }
@@ -726,17 +727,28 @@ const app = createApp({
       const state = pSearchState.value[creneauId];
       if (!state) return [];
       const q = state.query.toLowerCase().trim();
+      const creneau = pCreneaux.value.find(c => c.id === creneauId);
+      const creneauPosteId = creneau?.poste_id ?? null;
       return pExtras.value
         .map(e => ({
           ...e,
-          hasDispo: e.dispo_creneau_ids.includes(creneauId),
+          hasDispo:    e.dispo_creneau_ids.includes(creneauId),
           hasFilledDispo: e.dispo_creneau_ids.length > 0,
+          hasPoste:    creneauPosteId ? (e.poste_ids ?? []).includes(creneauPosteId) : true,
         }))
         .filter(e => {
-          if (q) return `${e.prenom} ${e.nom}`.toLowerCase().includes(q); // recherche manuelle : tout afficher
-          return e.hasDispo || !e.hasFilledDispo; // par défaut : dispo + pas répondu seulement
+          if (q) return `${e.prenom} ${e.nom}`.toLowerCase().includes(q);
+          return e.hasDispo || !e.hasFilledDispo;
         })
-        .sort((a, b) => (b.hasDispo ? 1 : 0) - (a.hasDispo ? 1 : 0));
+        .sort((a, b) => {
+          // Score : 0=dispo+compétence, 1=dispo sans compétence, 2=pas répondu+compétence, 3=pas répondu sans compétence
+          const score = e => {
+            const dispo = e.hasDispo ? 0 : (e.hasFilledDispo ? 99 : 2);
+            const poste = e.hasPoste ? 0 : 1;
+            return dispo + poste;
+          };
+          return score(a) - score(b);
+        });
     }
 
     function openSearch(creneauId, event) {
@@ -1255,6 +1267,9 @@ const app = createApp({
               >
                 <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
                 <span class="extra-name">{{ e.prenom }} {{ e.nom }}</span>
+                <span v-if="row.poste_id" class="dispo-tag" :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
+                  {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                </span>
                 <span class="dispo-tag" :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
                   {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
                 </span>
