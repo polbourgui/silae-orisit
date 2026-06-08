@@ -63,15 +63,18 @@ export function greedyScheduler(extras, creneaux, disponibilites) {
   };
 
   for (const creneau of creneaux) {
+    const nb = creneau.nb_postes ?? 1;
+    let assigned = 0;
     const candidates = candidatesForCreneau(creneau.id, creneau.poste_id);
     for (const extra of candidates) {
+      if (assigned >= nb) break;
       if (assignedPerExtra.get(extra.id).some((c) => c.id === creneau.id)) continue;
       if (violatesRestRule(assignedPerExtra.get(extra.id), creneau)) continue;
       const durationH = (timeToMinutes(creneau.heure_fin) - timeToMinutes(creneau.heure_debut)) / 60;
       hoursAssigned.set(extra.id, (hoursAssigned.get(extra.id) ?? 0) + durationH);
       assignedPerExtra.get(extra.id).push(creneau);
       result.push({ extra_id: extra.id, creneau_id: creneau.id });
-      break;
+      assigned++;
     }
   }
   return result;

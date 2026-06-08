@@ -2,7 +2,7 @@ import pool from './db.js';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const JOUR_ORDER = Object.fromEntries(JOURS.map((j, i) => [j, i]));
-const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id';
+const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes';
 
 export { JOURS };
 
@@ -23,12 +23,12 @@ export async function findCreneauxBySemaine(semaineId) {
     );
 }
 
-export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId }) {
+export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId, nbPostes = 1 }) {
   const { rows } = await pool.query(
-    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING ${CRENEAU_COLS}`,
-    [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null]
+    [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes]
   );
   return rows[0];
 }
@@ -40,10 +40,10 @@ export async function createCreneauxBatch(semaineId, creneaux) {
     const inserted = [];
     for (const c of creneaux) {
       const { rows } = await client.query(
-        `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING ${CRENEAU_COLS}`,
-        [semaineId, c.jour ?? 'lundi', c.slot_label, c.heure_debut, c.heure_fin, c.poste_id ?? null]
+        [semaineId, c.jour ?? 'lundi', c.slot_label, c.heure_debut, c.heure_fin, c.poste_id ?? null, c.nb_postes ?? 1]
       );
       inserted.push(rows[0]);
     }

@@ -53,6 +53,8 @@ router.post('/semaine/:isoWeek', async (req, res, next) => {
     assertRequired(req.body, ['jour', 'slot_label', 'heure_debut', 'heure_fin']);
     validateCreneauFields(req.body);
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
+    const nbPostes = req.body.nb_postes != null ? parseInt(req.body.nb_postes, 10) : 1;
+    if (!Number.isInteger(nbPostes) || nbPostes < 1 || nbPostes > 20) throw new ValidationError('nb_postes doit être un entier entre 1 et 20');
     const creneau = await createCreneau({
       semaineId: semaine.id,
       jour: req.body.jour,
@@ -60,6 +62,7 @@ router.post('/semaine/:isoWeek', async (req, res, next) => {
       heureDebut: req.body.heure_debut,
       heureFin: req.body.heure_fin,
       posteId: req.body.poste_id ?? null,
+      nbPostes,
     });
     res.status(201).json({ ok: true, data: creneau });
   } catch (err) {

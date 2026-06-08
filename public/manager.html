@@ -479,7 +479,7 @@ const app = createApp({
     const saving      = ref(false);
     const alertMsg    = ref(null);
 
-    const form = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', jours: ['lundi'] });
+    const form = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', nb_postes: 1, jours: ['lundi'] });
     const formErrors = ref({});
 
     const csvRows   = ref([]);
@@ -549,6 +549,7 @@ const app = createApp({
               heure_debut: form.value.heure_debut,
               heure_fin:   form.value.heure_fin,
               poste_id:    form.value.poste_id || null,
+              nb_postes:   form.value.nb_postes || 1,
             }),
           });
           created.push(c);
@@ -665,17 +666,22 @@ const app = createApp({
 
     const pIsPublished = computed(() => !!pPlanning.value?.published_at);
     const pNbPourvus   = computed(() => pAffectations.value.length);
-    const pNbTotal     = computed(() => pCreneaux.value.length);
+    const pNbTotal     = computed(() => pCreneaux.value.reduce((s, c) => s + (c.nb_postes ?? 1), 0));
 
     const pTableRows = computed(() => {
       const rows = [];
       let lastJour = null;
       for (const c of pCreneaux.value) {
         if (c.jour !== lastJour) { rows.push({ isSep: true, jour: c.jour }); lastJour = c.jour; }
-        const aff = pAffectations.value.find(a => a.creneau_id === c.id);
-        const extra = aff ? pExtras.value.find(e => e.id === aff.extra_id) : null;
+        const nb = c.nb_postes ?? 1;
+        const affs = pAffectations.value.filter(a => a.creneau_id === c.id);
         const poste = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
-        rows.push({ isSep: false, ...c, aff, extra, poste });
+        for (let i = 0; i < nb; i++) {
+          const aff = affs[i] ?? null;
+          const extra = aff ? pExtras.value.find(e => e.id === aff.extra_id) : null;
+          const slotKey = `${c.id}::${i}`;
+          rows.push({ isSep: false, ...c, slotKey, slotIndex: i, nb, aff, extra, poste });
+        }
       }
       return rows;
     });
@@ -688,9 +694,12 @@ const app = createApp({
         pExtras.value       = data.extras;
         pPlanning.value     = data.planning;
         pAffectations.value = data.affectations;
-        // Initialiser l'état de recherche pour chaque créneau
+        // Initialiser l'état de recherche pour chaque slot (creneauId::slotIndex)
         const state = {};
-        for (const c of data.creneaux) state[c.id] = { query: '', open: false, activeIdx: 0, dropRect: null };
+        for (const c of data.creneaux) {
+          const nb = c.nb_postes ?? 1;
+          for (let i = 0; i < nb; i++) state[`${c.id}::${i}`] = { query: '', open: false, activeIdx: 0, dropRect: null };
+        }
         pSearchState.value = state;
       } catch (err) { showAlert('error', err.message); }
       finally { pLoading.value = false; }
@@ -722,14 +731,17 @@ const app = createApp({
       finally { pSaving.value = false; }
     }
 
-    // Filtre les extras pour un créneau donné selon la query de recherche
-    function filteredExtras(creneauId) {
-      const state = pSearchState.value[creneauId];
+    // Filtre les extras pour un slot donné (slotKey = creneauId::slotIndex)
+    function filteredExtras(slotKey) {
+      const [creneauId] = slotKey.split('::');
+      const state = pSearchState.value[slotKey];
       if (!state) return [];
       const q = state.query.toLowerCase().trim();
       const creneau = pCreneaux.value.find(c => c.id === creneauId);
       const creneauPosteId = creneau?.poste_id ?? null;
+      const alreadyAssigned = new Set(pAffectations.value.filter(a => a.creneau_id === creneauId).map(a => a.extra_id));
       return pExtras.value
+        .filter(e => !alreadyAssigned.has(e.id))
         .map(e => ({
           ...e,
           hasDispo:    e.dispo_creneau_ids.includes(creneauId),
@@ -751,9 +763,9 @@ const app = createApp({
         });
     }
 
-    function openSearch(creneauId, event) {
+    function openSearch(slotKey, event) {
       if (pIsPublished.value) return;
-      const s = pSearchState.value[creneauId];
+      const s = pSearchState.value[slotKey];
       if (!s) return;
       const rect = event?.target?.closest?.('.assignee-field')?.getBoundingClientRect?.() ?? event?.target?.getBoundingClientRect?.();
       s.open = true;
@@ -774,26 +786,31 @@ const app = createApp({
       }
     }
 
-    function closeSearch(creneauId) {
-      const s = pSearchState.value[creneauId];
+    function closeSearch(slotKey) {
+      const s = pSearchState.value[slotKey];
       if (s) setTimeout(() => { s.open = false; }, 150);
     }
 
-    async function selectExtra(creneauId, extraId) {
-      const s = pSearchState.value[creneauId];
+    async function selectExtra(slotKey, extraId) {
+      const [creneauId] = slotKey.split('::');
+      const s = pSearchState.value[slotKey];
       if (s) { s.open = false; s.query = ''; }
       try {
         await apiFetch(`/plannings/week/${currentWeek.value}/affectation/${creneauId}`, {
           method: 'PUT', body: JSON.stringify({ extra_id: extraId }),
         });
-        // Mise à jour locale sans rechargement
-        pAffectations.value = pAffectations.value.filter(a => a.creneau_id !== creneauId);
-        if (extraId) pAffectations.value.push({ creneau_id: creneauId, extra_id: extraId });
+        pAffectations.value = [...pAffectations.value, { creneau_id: creneauId, extra_id: extraId }];
       } catch (err) { showAlert('error', err.message); }
     }
 
-    async function clearExtra(creneauId) {
-      await selectExtra(creneauId, null);
+    async function clearExtra(slotKey) {
+      const [creneauId] = slotKey.split('::');
+      const row = pTableRows.value.find(r => !r.isSep && r.slotKey === slotKey);
+      if (!row?.extra) return;
+      try {
+        await apiFetch(`/plannings/week/${currentWeek.value}/affectation/${creneauId}/${row.extra.id}`, { method: 'DELETE' });
+        pAffectations.value = pAffectations.value.filter(a => !(a.creneau_id === creneauId && a.extra_id === row.extra.id));
+      } catch (err) { showAlert('error', err.message); }
     }
 
     // ── Vue extras ─────────────────────────────────────────────────────────
@@ -970,8 +987,8 @@ const app = createApp({
       proposeAlgo, publishPlanning, filteredExtras,
       openSearch, closeSearch, selectExtra, clearExtra,
       avatarColor, initials,
-      dropStyle: (creneauId) => {
-        const r = pSearchState.value[creneauId]?.dropRect;
+      dropStyle: (slotKey) => {
+        const r = pSearchState.value[slotKey]?.dropRect;
         if (!r) return {};
         return {
           position: 'fixed',
@@ -1059,6 +1076,7 @@ const app = createApp({
             <th>Horaires</th>
             <th>Durée</th>
             <th>Poste</th>
+            <th style="text-align:center" title="Nombre de postes">Qté</th>
             <th></th>
           </tr>
         </thead>
@@ -1073,6 +1091,7 @@ const app = createApp({
               <td class="time-range">{{ row.heure_debut }} → {{ row.heure_fin }}</td>
               <td style="color:#64748b">{{ duration(row.heure_debut, row.heure_fin) }}</td>
               <td style="color:#475569;font-size:12px">{{ posteLabel(row.poste_id) }}</td>
+              <td style="text-align:center;font-size:12px;font-weight:600;color:#334155">{{ row.nb_postes ?? 1 }}</td>
               <td><button class="btn-icon" @click="deleteCreneau(row.id)" title="Supprimer">✕</button></td>
             </tr>
           </template>
@@ -1161,12 +1180,19 @@ const app = createApp({
                 <span v-if="formErrors.heure_fin" class="error-msg">{{ formErrors.heure_fin }}</span>
               </div>
             </div>
-            <div class="form-group" style="margin-bottom:14px">
-              <label>Poste (optionnel)</label>
-              <select v-model="form.poste_id">
-                <option value="">— Sans poste —</option>
-                <option v-for="p in postes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
-              </select>
+            <div class="form-row" style="margin-bottom:14px">
+              <div class="form-group" style="flex:2">
+                <label>Poste (optionnel)</label>
+                <select v-model="form.poste_id">
+                  <option value="">— Sans poste —</option>
+                  <option v-for="p in postes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1">
+                <label>Nb postes</label>
+                <input type="number" v-model.number="form.nb_postes" min="1" max="20"
+                  style="text-align:center" />
+              </div>
             </div>
             <button class="btn btn-primary btn-full" @click="addCreneau" :disabled="saving">
               <span v-if="saving" class="spinner"></span>
@@ -1289,22 +1315,28 @@ const app = createApp({
           {{ row.jour.charAt(0).toUpperCase() + row.jour.slice(1) }}
         </div>
 
-        <div v-else class="planning-row">
-          <!-- Horaires -->
-          <div style="font-variant-numeric:tabular-nums;font-size:12px;font-weight:600;color:#334155;white-space:nowrap">
-            {{ row.heure_debut }} → {{ row.heure_fin }}
+        <div v-else class="planning-row" :style="row.slotIndex > 0 ? 'padding-top:4px;padding-bottom:4px;opacity:.92' : ''">
+          <!-- Horaires (seulement sur le 1er slot) -->
+          <div style="font-variant-numeric:tabular-nums;font-size:12px;font-weight:600;color:#334155;white-space:nowrap;min-width:90px">
+            <template v-if="row.slotIndex === 0">{{ row.heure_debut }} → {{ row.heure_fin }}</template>
           </div>
-          <!-- Libellé + poste -->
+          <!-- Libellé + poste (1er slot) ou indicateur de poste suivant -->
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
-            <span style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.slot_label }}</span>
-            <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
-              {{ row.poste.libelle }}
-            </span>
+            <template v-if="row.slotIndex === 0">
+              <span style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.slot_label }}</span>
+              <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
+                {{ row.poste.libelle }}
+              </span>
+              <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
+                {{ row.nb }} postes
+              </span>
+            </template>
+            <span v-else style="font-size:11px;color:#94a3b8;padding-left:4px">poste {{ row.slotIndex + 1 }}/{{ row.nb }}</span>
           </div>
 
           <!-- Champ assignation avec recherche -->
-          <div v-if="pSearchState[row.id]" style="position:relative">
-            <div :class="['assignee-field', row.extra ? 'is-filled' : '', pSearchState[row.id].open ? 'is-focused' : '']">
+          <div v-if="pSearchState[row.slotKey]" style="position:relative">
+            <div :class="['assignee-field', row.extra ? 'is-filled' : '', pSearchState[row.slotKey].open ? 'is-focused' : '']">
               <div v-if="row.extra" class="avatar" :style="{ background: avatarColor(row.extra.id) }">
                 {{ initials(row.extra.nom, row.extra.prenom) }}
               </div>
@@ -1313,27 +1345,27 @@ const app = createApp({
                 type="text"
                 :placeholder="row.extra ? row.extra.prenom + ' ' + row.extra.nom : 'Rechercher un extra…'"
                 :style="row.extra ? 'color:#15803d;font-weight:500' : ''"
-                :value="pSearchState[row.id].query"
-                @input="pSearchState[row.id].query = $event.target.value"
-                @focus="openSearch(row.id, $event)"
-                @blur="closeSearch(row.id)"
+                :value="pSearchState[row.slotKey].query"
+                @input="pSearchState[row.slotKey].query = $event.target.value"
+                @focus="openSearch(row.slotKey, $event)"
+                @blur="closeSearch(row.slotKey)"
               />
               <span v-else style="flex:1;color:#15803d;font-weight:500">
                 {{ row.extra ? row.extra.prenom + ' ' + row.extra.nom : '—' }}
               </span>
-              <span v-if="row.extra && !pIsPublished" class="clear-btn" @mousedown.prevent="clearExtra(row.id)">✕</span>
+              <span v-if="row.extra && !pIsPublished" class="clear-btn" @mousedown.prevent="clearExtra(row.slotKey)">✕</span>
             </div>
 
             <!-- Dropdown suggestions -->
-            <div v-if="pSearchState[row.id].open" class="suggestions"
-              :style="dropStyle(row.id)">
-              <div v-if="filteredExtras(row.id).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
+            <div v-if="pSearchState[row.slotKey].open" class="suggestions"
+              :style="dropStyle(row.slotKey)">
+              <div v-if="filteredExtras(row.slotKey).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
                 Aucun résultat
               </div>
               <div
-                v-for="(e, idx) in filteredExtras(row.id)" :key="e.id"
-                :class="['suggestion-item', idx === pSearchState[row.id].activeIdx ? 'active' : '']"
-                @mousedown.prevent="selectExtra(row.id, e.id)"
+                v-for="(e, idx) in filteredExtras(row.slotKey)" :key="e.id"
+                :class="['suggestion-item', idx === pSearchState[row.slotKey].activeIdx ? 'active' : '']"
+                @mousedown.prevent="selectExtra(row.slotKey, e.id)"
               >
                 <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
                 <span class="extra-name">{{ e.prenom }} {{ e.nom }}</span>
