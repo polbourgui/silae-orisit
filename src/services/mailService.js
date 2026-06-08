@@ -1,16 +1,19 @@
 import { Resend } from 'resend';
-import 'dotenv/config';
 import logger from '../logger.js';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM;
+
+function getResend() {
+  if (!process.env.RESEND_API_KEY) throw new Error('RESEND_API_KEY manquante dans .env');
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 /**
  * @param {{ prenom: string, nom: string, email: string }} extra
  * @param {string} magicLinkUrl
  */
 export async function sendDispoLink(extra, magicLinkUrl) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: extra.email,
     subject: 'Indiquez vos disponibilités pour la semaine',
@@ -34,7 +37,7 @@ export async function sendDispoLink(extra, magicLinkUrl) {
  * @param {string} contratUrl
  */
 export async function sendContratLink(extra, contratUrl) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM,
     to: extra.email,
     subject: 'Votre contrat est disponible',
