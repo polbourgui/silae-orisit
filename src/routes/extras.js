@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import pool from '../models/db.js';
 import { requireManagerAuth } from '../middleware/auth.js';
 import siteScope from '../middleware/siteScope.js';
 import { findExtrasBySite, findExtraById, updateTokenVersion } from '../models/extrasModel.js';
@@ -42,6 +43,20 @@ router.post('/sync', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+router.put('/:id/blocked', async (req, res, next) => {
+  try {
+    if (!validateUUID(req.params.id)) throw new ValidationError('UUID invalide');
+    const { blocked } = req.body;
+    if (typeof blocked !== 'boolean') throw new ValidationError('blocked doit être un booléen');
+    const { rows } = await pool.query(
+      `UPDATE extras SET is_blocked = $1 WHERE id = $2 AND site_id = $3 RETURNING id, is_blocked`,
+      [blocked, req.params.id, req.siteId]
+    );
+    if (!rows[0]) throw new NotFoundError('Extra introuvable');
+    res.json({ ok: true, data: rows[0] });
+  } catch (err) { next(err); }
 });
 
 // Génère (et envoie si RESEND configuré) un magic link dispo pour un extra
