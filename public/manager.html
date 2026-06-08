@@ -697,12 +697,15 @@ const app = createApp({
       if (!state) return [];
       const q = state.query.toLowerCase().trim();
       return pExtras.value
-        .filter(e => !q || `${e.prenom} ${e.nom}`.toLowerCase().includes(q))
         .map(e => ({
           ...e,
           hasDispo: e.dispo_creneau_ids.includes(creneauId),
           hasFilledDispo: e.dispo_creneau_ids.length > 0,
         }))
+        .filter(e => {
+          if (q) return `${e.prenom} ${e.nom}`.toLowerCase().includes(q); // recherche manuelle : tout afficher
+          return e.hasDispo || !e.hasFilledDispo; // par défaut : dispo + pas répondu seulement
+        })
         .sort((a, b) => (b.hasDispo ? 1 : 0) - (a.hasDispo ? 1 : 0));
     }
 
