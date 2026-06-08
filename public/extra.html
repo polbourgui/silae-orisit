@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Mes disponibilités</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+    .header {
+      background: #1e40af;
+      color: #fff;
+      padding: 20px 16px 16px;
+    }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header p  { font-size: 13px; opacity: .8; margin-top: 4px; }
+    .week-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: rgba(255,255,255,.2);
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .content { padding: 16px; max-width: 480px; margin: 0 auto; }
+
+    .day-block { margin-bottom: 20px; }
+    .day-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .slot-card {
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .slot-card.checked {
+      border-color: #22c55e;
+      background: #f0fdf4;
+    }
+    .slot-card.checked .check-icon { background: #22c55e; border-color: #22c55e; }
+    .slot-card.checked .check-icon::after { opacity: 1; }
+
+    .check-icon {
+      width: 24px; height: 24px; min-width: 24px;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      position: relative;
+      transition: background .15s, border-color .15s;
+    }
+    .check-icon::after {
+      content: '';
+      position: absolute;
+      top: 4px; left: 7px;
+      width: 6px; height: 10px;
+      border: 2px solid #fff;
+      border-top: none; border-left: none;
+      transform: rotate(45deg);
+      opacity: 0;
+      transition: opacity .15s;
+    }
+
+    .slot-info { flex: 1; min-width: 0; }
+    .slot-time { font-size: 15px; font-weight: 700; color: #1e293b; }
+    .slot-label { font-size: 13px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot-poste {
+      font-size: 11px;
+      background: #eff6ff;
+      color: #2563eb;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-weight: 600;
+    }
+
+    .empty-day {
+      font-size: 13px;
+      color: #94a3b8;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .footer {
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      padding: 12px 16px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .btn-submit {
+      width: 100%;
+      background: #1e40af;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, opacity .15s;
+    }
+    .btn-submit:disabled { opacity: .5; cursor: default; }
+    .btn-submit:active:not(:disabled) { background: #1e3a8a; }
+
+    .count-pill {
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .count-pill strong { color: #1e40af; }
+
+    .state-screen {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 60vh;
+      padding: 32px 24px; text-align: center;
+    }
+    .state-icon { font-size: 56px; margin-bottom: 16px; }
+    .state-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .state-sub   { font-size: 14px; color: #64748b; line-height: 1.5; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e2e8f0;
+      border-top-color: #1e40af;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { createApp, ref, computed, onMounted } from '/vendor/vue.esm-browser.js';
+
+const JOURS_LABELS = {
+  lundi: 'Lundi', mardi: 'Mardi', mercredi: 'Mercredi',
+  jeudi: 'Jeudi', vendredi: 'Vendredi', samedi: 'Samedi', dimanche: 'Dimanche',
+};
+const JOURS_ORDER = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+function formatTime(t) { return t ? t.slice(0, 5) : t; }
+
+function weekLabel(isoWeek) {
+  if (!isoWeek) return '';
+  const [year, wStr] = isoWeek.split('-W');
+  const w = parseInt(wStr, 10);
+  // ISO week monday
+  const jan4 = new Date(parseInt(year), 0, 4);
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (w - 1) * 7);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return `${fmt(monday)} – ${fmt(sunday)}`;
+}
+
+const app = createApp({
+  setup() {
+    const token = new URLSearchParams(location.search).get('token');
+    const state  = ref('loading'); // loading | form | success | error | expired
+    const errMsg = ref('');
+    const extra  = ref(null);
+    const semaine = ref(null);
+    const creneaux = ref([]);
+    const checked  = ref(new Set());
+    const saving   = ref(false);
+
+    const groupedByDay = computed(() => {
+      const groups = {};
+      for (const c of creneaux.value) {
+        if (!groups[c.jour]) groups[c.jour] = [];
+        groups[c.jour].push(c);
+      }
+      return JOURS_ORDER.filter(j => groups[j]).map(j => ({ jour: j, label: JOURS_LABELS[j], slots: groups[j] }));
+    });
+
+    const checkedCount = computed(() => checked.value.size);
+
+    async function load() {
+      if (!token) { state.value = 'error'; errMsg.value = 'Lien invalide.'; return; }
+      try {
+        const res = await fetch(`/dispos/${token}`);
+        const data = await res.json();
+        if (!data.ok) {
+          const msg = data.error?.toLowerCase() ?? '';
+          state.value = msg.includes('expiré') || msg.includes('révoqué') ? 'expired' : 'error';
+          errMsg.value = data.error ?? 'Erreur inconnue';
+          return;
+        }
+        extra.value   = data.data.extra;
+        semaine.value = data.data.semaine;
+        creneaux.value = data.data.creneaux;
+        checked.value  = new Set(data.data.checked_ids);
+        state.value = creneaux.value.length === 0 ? 'no-creneaux' : 'form';
+      } catch {
+        state.value = 'error';
+        errMsg.value = 'Impossible de charger le formulaire.';
+      }
+    }
+
+    function toggle(id) {
+      if (checked.value.has(id)) checked.value.delete(id);
+      else checked.value.add(id);
+      checked.value = new Set(checked.value); // trigger reactivity
+    }
+
+    async function submit() {
+      if (saving.value) return;
+      saving.value = true;
+      try {
+        const res = await fetch(`/dispos/${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ creneau_ids: [...checked.value] }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error ?? 'Erreur');
+        state.value = 'success';
+      } catch (e) {
+        errMsg.value = e.message;
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    onMounted(load);
+
+    return { state, errMsg, extra, semaine, groupedByDay, checked, checkedCount, saving, toggle, submit, weekLabel, formatTime };
+  },
+
+  template: `
+<div>
+
+  <!-- Loading -->
+  <div v-if="state === 'loading'" class="state-screen">
+    <div class="spinner"></div>
+    <p style="color:#64748b;font-size:14px">Chargement…</p>
+  </div>
+
+  <!-- Error -->
+  <div v-else-if="state === 'error'" class="state-screen">
+    <div class="state-icon">❌</div>
+    <div class="state-title">Lien invalide</div>
+    <div class="state-sub">{{ errMsg }}</div>
+  </div>
+
+  <!-- Expired -->
+  <div v-else-if="state === 'expired'" class="state-screen">
+    <div class="state-icon">⏰</div>
+    <div class="state-title">Lien expiré</div>
+    <div class="state-sub">Ce lien n'est plus valable. Contactez votre responsable pour en recevoir un nouveau.</div>
+  </div>
+
+  <!-- No creneaux -->
+  <div v-else-if="state === 'no-creneaux'" class="state-screen">
+    <div class="state-icon">📅</div>
+    <div class="state-title">Aucun créneau</div>
+    <div class="state-sub">Aucun créneau n'a encore été défini pour cette semaine. Revenez plus tard.</div>
+  </div>
+
+  <!-- Success -->
+  <div v-else-if="state === 'success'" class="state-screen">
+    <div class="state-icon">✅</div>
+    <div class="state-title">Disponibilités enregistrées !</div>
+    <div class="state-sub">Merci {{ extra?.prenom }}. Vos disponibilités ont bien été prises en compte.</div>
+  </div>
+
+  <!-- Form -->
+  <template v-else>
+    <div class="header">
+      <h1>Vos disponibilités</h1>
+      <p v-if="extra">Bonjour {{ extra.prenom }} {{ extra.nom }}</p>
+      <span class="week-badge">{{ weekLabel(semaine?.iso_week) }}</span>
+    </div>
+
+    <div class="content" style="padding-bottom: 100px">
+      <p style="font-size:13px;color:#64748b;margin:12px 0 16px">
+        Cochez les créneaux pour lesquels vous êtes disponible.
+      </p>
+
+      <div class="day-block" v-for="group in groupedByDay" :key="group.jour">
+        <div class="day-label">{{ group.label }}</div>
+        <div
+          v-for="slot in group.slots"
+          :key="slot.id"
+          class="slot-card"
+          :class="{ checked: checked.has(slot.id) }"
+          @click="toggle(slot.id)"
+        >
+          <div class="check-icon"></div>
+          <div class="slot-info">
+            <div class="slot-time">{{ formatTime(slot.heure_debut) }} – {{ formatTime(slot.heure_fin) }}</div>
+            <div class="slot-label">{{ slot.slot_label }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="count-pill">
+        <strong>{{ checkedCount }}</strong> créneau(x) sélectionné(s)
+      </div>
+      <button class="btn-submit" :disabled="saving" @click="submit">
+        {{ saving ? 'Enregistrement…' : 'Confirmer mes disponibilités' }}
+      </button>
+      <p v-if="errMsg" style="color:#ef4444;font-size:12px;margin-top:8px;text-align:center">{{ errMsg }}</p>
+    </div>
+  </template>
+
+</div>
+  `,
+});
+
+app.mount('#app');
+</script>
+</body>
+</html>

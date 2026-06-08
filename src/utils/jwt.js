@@ -25,12 +25,13 @@ export function generateManagerToken(manager) {
  * @param {{ type: string, extraId: string, siteId: string, semaine?: string, contratId?: string }} opts
  * @returns {string}
  */
-export function generateMagicLinkToken({ type, extraId, siteId, semaine, contratId }) {
+export function generateMagicLinkToken({ type, extraId, siteId, semaine, contratId, tokenVersion }) {
   const expiresIn = type === 'contrat' ? '7d' : '48h';
   const payload = {
     type,
     extra_id: extraId,
     site_id: siteId,
+    token_version: tokenVersion,
     ...(semaine ? { semaine } : {}),
     ...(contratId ? { contrat_id: contratId } : {}),
   };

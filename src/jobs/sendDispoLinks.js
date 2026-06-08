@@ -27,6 +27,7 @@ async function sendDispoLinksForAllSites() {
             extraId: extra.id,
             siteId: site.id,
             semaine: isoWeek,
+            tokenVersion: updated.token_version,
           });
           const magicLinkUrl = `${APP_BASE_URL}/dispos/${token}`;
           await sendDispoLink(extra, magicLinkUrl);

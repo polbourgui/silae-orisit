@@ -3,8 +3,9 @@ import rateLimit from 'express-rate-limit';
 import { requireManagerAuth } from '../middleware/auth.js';
 import { requireMagicLink } from '../middleware/auth.js';
 import siteScope from '../middleware/siteScope.js';
-import { saveDisponibilites, findDisponibilites } from '../models/disponibilitesModel.js';
+import { saveDisponibilites, findDisponibilites, findDisponibilitesExtra } from '../models/disponibilitesModel.js';
 import { findOrCreateSemaine } from '../models/semainModel.js';
+import { findCreneauxBySemaine } from '../models/creneauxModel.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
 import { ValidationError } from '../errors/index.js';
 
@@ -14,7 +15,11 @@ const magicLinkLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders:
 
 router.get('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, res, next) => {
   try {
-    res.json({ ok: true, data: { extra: req.extra, semaine: req.semaine, message: 'Formulaire disponibilités' } });
+    const semaine = await findOrCreateSemaine(req.extra.site_id, req.semaine);
+    const creneaux = await findCreneauxBySemaine(semaine.id);
+    const dispos = await findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id);
+    const checked_ids = dispos.map(d => d.creneau_id);
+    res.json({ ok: true, data: { extra: req.extra, semaine, creneaux, checked_ids } });
   } catch (err) {
     next(err);
   }
