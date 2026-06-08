@@ -800,7 +800,9 @@ const app = createApp({
     const eExtras    = ref([]);
     const eLoading   = ref(false);
     const eLinkModal = ref(null); // { extra, semaine, url } | null
-    const eLinkWeek  = ref(isoWeekFromDate(new Date()));
+    const eLinkWeek       = ref(isoWeekFromDate(new Date()));
+    const eLinkWeekLabel  = computed(() => eLinkWeek.value.replace('-W', ' — Semaine '));
+    const eLinkWeekBounds = computed(() => weekBoundsLabel(eLinkWeek.value));
     const eSending   = ref({}); // { [extraId]: bool }
 
     async function loadExtras() {
@@ -918,7 +920,9 @@ const app = createApp({
         };
       },
       // extras
-      eExtras, eLoading, eLinkModal, eLinkWeek, eSending,
+      eExtras, eLoading, eLinkModal, eLinkWeek, eLinkWeekLabel, eLinkWeekBounds, eSending,
+      eLinkPrevWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, -1); },
+      eLinkNextWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, +1); },
       sendDispoLink, loadExtras,
       eExtraPostes, ePostesSaving, loadExtraPostes, toggleExtraPoste,
       // postes
@@ -1302,11 +1306,15 @@ const app = createApp({
     </button>
   </div>
 
-  <!-- Sélecteur semaine -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px">
-    <span style="font-size:13px;color:#64748b;white-space:nowrap">Semaine pour les liens :</span>
-    <input type="text" v-model="eLinkWeek" placeholder="ex: 2026-W24"
-      style="border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:13px;color:#1e293b;width:120px" />
+  <!-- Sélecteur semaine (même style que la vue planning) -->
+  <div class="week-nav" style="margin-bottom:20px">
+    <button @click="eLinkPrevWeek">‹</button>
+    <div>
+      <div class="week-label">{{ eLinkWeekLabel }}</div>
+      <div class="week-bounds">{{ eLinkWeekBounds }}</div>
+    </div>
+    <button @click="eLinkNextWeek">›</button>
+    <div class="spacer"></div>
     <span style="font-size:12px;color:#94a3b8">Les liens générés seront valables 48h</span>
   </div>
 
