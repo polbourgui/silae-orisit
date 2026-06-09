@@ -95,23 +95,25 @@ export const TEMPLATE_PLANNING = `
               <span v-if="row.extra && !pIsPublished" class="clear-btn" @mousedown.prevent="clearExtra(row.slotKey)">✕</span>
             </div>
 
-            <div v-if="pSearchState[row.slotKey].open" class="suggestions" :style="dropStyle(row.slotKey)">
-              <div v-if="filteredExtras(row.slotKey).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
-                Aucun résultat
+            <Teleport to="body">
+              <div v-if="pSearchState[row.slotKey].open" class="suggestions" :style="dropStyle(row.slotKey)">
+                <div v-if="filteredExtras(row.slotKey).length === 0" style="padding:10px 12px;color:#94a3b8;font-size:12px">
+                  Aucun résultat
+                </div>
+                <div v-for="(e, idx) in filteredExtras(row.slotKey)" :key="e.id"
+                  :class="['suggestion-item', idx === pSearchState[row.slotKey].activeIdx ? 'active' : '']"
+                  @mousedown.prevent="selectExtra(row.slotKey, e.id)">
+                  <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
+                  <span class="extra-name">{{ e.prenom }} {{ e.nom }}</span>
+                  <span v-if="row.poste_id" class="dispo-tag" :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
+                    {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                  </span>
+                  <span class="dispo-tag" :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
+                    {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
+                  </span>
+                </div>
               </div>
-              <div v-for="(e, idx) in filteredExtras(row.slotKey)" :key="e.id"
-                :class="['suggestion-item', idx === pSearchState[row.slotKey].activeIdx ? 'active' : '']"
-                @mousedown.prevent="selectExtra(row.slotKey, e.id)">
-                <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
-                <span class="extra-name">{{ e.prenom }} {{ e.nom }}</span>
-                <span v-if="row.poste_id" class="dispo-tag" :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
-                  {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
-                </span>
-                <span class="dispo-tag" :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
-                  {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
-                </span>
-              </div>
-            </div>
+            </Teleport>
           </div>
           <div v-else style="flex:1"></div>
 
