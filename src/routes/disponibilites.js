@@ -6,6 +6,7 @@ import siteScope from '../middleware/siteScope.js';
 import { saveDisponibilites, findDisponibilites, findDisponibilitesExtra } from '../models/disponibilitesModel.js';
 import { findOrCreateSemaine } from '../models/semainModel.js';
 import { findCreneauxBySemaine } from '../models/creneauxModel.js';
+import { findPostesByExtra } from '../models/postesModel.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
 import { ValidationError } from '../errors/index.js';
 
@@ -16,8 +17,13 @@ const magicLinkLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders:
 router.get('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, res, next) => {
   try {
     const semaine = await findOrCreateSemaine(req.extra.site_id, req.semaine);
-    const creneaux = await findCreneauxBySemaine(semaine.id);
-    const dispos = await findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id);
+    const [allCreneaux, extraPostes, dispos] = await Promise.all([
+      findCreneauxBySemaine(semaine.id),
+      findPostesByExtra(req.extra.id, req.extra.site_id),
+      findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id),
+    ]);
+    const extraPosteIds = new Set(extraPostes.map(p => p.id));
+    const creneaux = allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id));
     const checked_ids = dispos.map(d => d.creneau_id);
     res.json({ ok: true, data: { extra: req.extra, semaine, creneaux, checked_ids } });
   } catch (err) {
@@ -33,7 +39,14 @@ router.post('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, 
       throw new ValidationError('creneau_ids doit être un tableau de UUIDs valides');
     }
     const semaine = await findOrCreateSemaine(req.extra.site_id, req.semaine);
-    const saved = await saveDisponibilites(req.extra.id, semaine.id, req.extra.site_id, creneau_ids);
+    const [allCreneaux, extraPostes] = await Promise.all([
+      findCreneauxBySemaine(semaine.id),
+      findPostesByExtra(req.extra.id, req.extra.site_id),
+    ]);
+    const extraPosteIds = new Set(extraPostes.map(p => p.id));
+    const allowedIds = new Set(allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id)).map(c => c.id));
+    const filtered_ids = creneau_ids.filter(id => allowedIds.has(id));
+    const saved = await saveDisponibilites(req.extra.id, semaine.id, req.extra.site_id, filtered_ids);
     res.json({ ok: true, data: { count: saved.length } });
   } catch (err) {
     next(err);
