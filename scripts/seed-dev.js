@@ -64,6 +64,13 @@ await pool.query(`
 `, [SITE_ID, hash]);
 console.log('✓ Manager  admin@test.fr / test1234');
 
+await pool.query(`
+  INSERT INTO managers (site_id, email, password_hash, role)
+  VALUES ($1, 'superadmin@test.fr', $2, 'superadmin')
+  ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'superadmin'
+`, [SITE_ID, hash]);
+console.log('✓ Superadmin  superadmin@test.fr / test1234  → /admin.html');
+
 // ── Présets ──────────────────────────────────────────────────────────────────
 const presetsData = [
   { label: 'Service midi',  slot_label: 'Service midi',  heure_debut: '11:00', heure_fin: '15:00', sort_order: 0 },

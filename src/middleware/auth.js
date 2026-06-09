@@ -27,6 +27,20 @@ export function requireManagerAuth(req, res, next) {
 }
 
 /**
+ * Returns middleware that requires a specific manager role.
+ * Must run after requireManagerAuth.
+ * @param {string} role
+ */
+export function requireRole(role) {
+  return (req, res, next) => {
+    if (req.manager?.role !== role) {
+      return next(new ForbiddenError('Accès réservé'));
+    }
+    return next();
+  };
+}
+
+/**
  * Returns middleware that verifies a magic link JWT from query param `token`.
  * Checks token_version against DB, attaches req.extra.
  * @param {'dispo'|'contrat'} expectedType

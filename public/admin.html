@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Silae Orisit — Administration</title>
+  <link rel="stylesheet" href="/manager-styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Silae Orisit</h1>
+  <span style="font-size:12px;background:#7e22ce;color:#fff;border-radius:5px;padding:2px 8px">Administration</span>
+  <div class="spacer"></div>
+  <span id="admin-name" style="font-size:13px;opacity:.8;margin-right:8px"></span>
+  <button id="btn-logout">Déconnexion</button>
+</header>
+
+<div class="layout">
+  <main id="app" style="max-width:1100px;margin:0 auto;width:100%"></main>
+</div>
+
+<script type="module">
+import { createApp, ref, onMounted } from '/vendor/vue.esm-browser.js';
+import { apiFetch } from '/js/manager-utils.js';
+
+const app = createApp({
+  setup() {
+    const sites      = ref([]);
+    const loading    = ref(false);
+    const alertMsg   = ref(null);
+    const saving     = ref(false);
+
+    // Création de site
+    const createOpen = ref(false);
+    const createForm = ref({ nom: '', siret: '', manager_email: '', manager_password: '' });
+
+    // Édition de site
+    const editSite = ref(null);
+    const editForm = ref({ nom: '', siret: '' });
+
+    // Managers d'un site
+    const managersSite  = ref(null);    // site dont on affiche les managers
+    const managers      = ref([]);
+    const managerForm   = ref({ email: '', password: '' });
+
+    function showAlert(type, msg) {
+      alertMsg.value = { type, msg };
+      setTimeout(() => { alertMsg.value = null; }, 4000);
+    }
+
+    async function loadSites() {
+      loading.value = true;
+      try { sites.value = await apiFetch('/admin/sites'); }
+      catch (err) { showAlert('error', err.message); }
+      finally { loading.value = false; }
+    }
+
+    async function createSite() {
+      saving.value = true;
+      try {
+        const body = { nom: createForm.value.nom, siret: createForm.value.siret };
+        if (createForm.value.manager_email) {
+          body.manager = { email: createForm.value.manager_email, password: createForm.value.manager_password };
+        }
+        await apiFetch('/admin/sites', { method: 'POST', body: JSON.stringify(body) });
+        showAlert('success', `Site « ${body.nom} » créé`);
+        createForm.value = { nom: '', siret: '', manager_email: '', manager_password: '' };
+        createOpen.value = false;
+        await loadSites();
+      } catch (err) { showAlert('error', err.message); }
+      finally { saving.value = false; }
+    }
+
+    function openEdit(site) {
+      editForm.value = { nom: site.nom, siret: site.siret };
+      editSite.value = site;
+    }
+
+    async function saveEdit() {
+      saving.value = true;
+      try {
+        await apiFetch(`/admin/sites/${editSite.value.id}`, { method: 'PATCH', body: JSON.stringify(editForm.value) });
+        showAlert('success', 'Site mis à jour');
+        editSite.value = null;
+        await loadSites();
+      } catch (err) { showAlert('error', err.message); }
+      finally { saving.value = false; }
+    }
+
+    async function openManagers(site) {
+      managersSite.value = site;
+      managers.value = [];
+      managerForm.value = { email: '', password: '' };
+      try { managers.value = await apiFetch(`/admin/sites/${site.id}/managers`); }
+      catch (err) { showAlert('error', err.message); }
+    }
+
+    async function addManager() {
+      saving.value = true;
+      try {
+        const m = await apiFetch(`/admin/sites/${managersSite.value.id}/managers`, {
+          method: 'POST', body: JSON.stringify(managerForm.value),
+        });
+        managers.value = [...managers.value, m];
+        managerForm.value = { email: '', password: '' };
+        showAlert('success', 'Manager créé');
+        await loadSites();
+      } catch (err) { showAlert('error', err.message); }
+      finally { saving.value = false; }
+    }
+
+    async function deleteManager(m) {
+      if (!confirm(`Supprimer le manager ${m.email} ?`)) return;
+      try {
+        await apiFetch(`/admin/managers/${m.id}`, { method: 'DELETE' });
+        managers.value = managers.value.filter(x => x.id !== m.id);
+        showAlert('success', 'Manager supprimé');
+        await loadSites();
+      } catch (err) { showAlert('error', err.message); }
+    }
+
+    onMounted(loadSites);
+
+    return {
+      sites, loading, alertMsg, saving,
+      createOpen, createForm, createSite,
+      editSite, editForm, openEdit, saveEdit,
+      managersSite, managers, managerForm, openManagers, addManager, deleteManager,
+    };
+  },
+
+  template: `<div>
+    <div v-if="alertMsg" :class="['alert','alert-'+alertMsg.type]">
+      <span>{{ alertMsg.type === 'error' ? '✕' : '✓' }}</span>{{ alertMsg.msg }}
+    </div>
+
+    <div class="page-header">
+      <div>
+        <h2>Sites</h2>
+        <p>Gérez les établissements et leurs managers. Chaque site correspond à un dossier Silae (SIRET).</p>
+      </div>
+      <button class="btn-primary" @click="createOpen = !createOpen">+ Nouveau site</button>
+    </div>
+
+    <div v-if="createOpen" class="card" style="margin-bottom:18px">
+      <div class="card-header"><h3>Nouveau site</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="form-group">
+            <label>Nom du site *</label>
+            <input v-model="createForm.nom" placeholder="ex: Le Grand Café" />
+          </div>
+          <div class="form-group">
+            <label>SIRET (dossier Silae) *</label>
+            <input v-model="createForm.siret" placeholder="14 chiffres" maxlength="14" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="form-group">
+            <label>Email du premier manager <span style="font-weight:400;color:#94a3b8">(facultatif)</span></label>
+            <input v-model="createForm.manager_email" type="email" placeholder="manager@site.fr" />
+          </div>
+          <div class="form-group">
+            <label>Mot de passe</label>
+            <input v-model="createForm.manager_password" type="password" placeholder="8 caractères min." />
+          </div>
+        </div>
+        <button class="btn btn-primary" :disabled="saving || !createForm.nom || !createForm.siret" @click="createSite">
+          {{ saving ? 'Création…' : 'Créer le site' }}
+        </button>
+      </div>
+    </div>
+
+    <div v-if="loading" style="text-align:center;padding:40px;color:#94a3b8">Chargement…</div>
+    <div v-else-if="sites.length === 0" class="empty-state">
+      <div class="icon">🏢</div>
+      <p>Aucun site. Créez le premier !</p>
+    </div>
+    <table v-else class="data-table">
+      <thead><tr>
+        <th>Site</th><th>SIRET</th>
+        <th style="text-align:center">Managers</th><th style="text-align:center">Extras</th>
+        <th style="text-align:right"></th>
+      </tr></thead>
+      <tbody>
+        <tr v-for="s in sites" :key="s.id">
+          <td style="font-weight:600">{{ s.nom }}</td>
+          <td style="font-family:monospace;font-size:12px;color:#64748b">{{ s.siret }}</td>
+          <td style="text-align:center">{{ s.nb_managers }}</td>
+          <td style="text-align:center">{{ s.nb_extras }}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn-sm" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;margin-right:6px" @click="openManagers(s)">Managers</button>
+            <button class="btn-icon" @click="openEdit(s)" title="Modifier">✏</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Modal édition site -->
+    <div v-if="editSite" class="modal-overlay" @click.self="editSite = null">
+      <div class="modal" style="max-width:440px">
+        <div class="modal-header">
+          <h3>Modifier le site</h3>
+          <button class="modal-close" @click="editSite = null">✕</button>
+        </div>
+        <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div class="form-group">
+            <label>Nom</label>
+            <input v-model="editForm.nom" />
+          </div>
+          <div class="form-group">
+            <label>SIRET</label>
+            <input v-model="editForm.siret" maxlength="14" />
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <button class="btn-sm" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0" @click="editSite = null">Annuler</button>
+            <button class="btn-sm btn-primary" :disabled="saving" @click="saveEdit">{{ saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal managers -->
+    <div v-if="managersSite" class="modal-overlay" @click.self="managersSite = null">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <h3>Managers — {{ managersSite.nom }}</h3>
+          <button class="modal-close" @click="managersSite = null">✕</button>
+        </div>
+        <div class="modal-body" style="padding:20px">
+          <table style="width:100%;margin-bottom:18px">
+            <thead><tr><th>Email</th><th>Rôle</th><th></th></tr></thead>
+            <tbody>
+              <tr v-if="managers.length === 0"><td colspan="3" style="color:#94a3b8;font-size:13px;padding:10px 0">Aucun manager.</td></tr>
+              <tr v-for="m in managers" :key="m.id">
+                <td style="font-size:13px">{{ m.email }}</td>
+                <td><span style="font-size:11px;background:#f1f5f9;border-radius:4px;padding:2px 7px;color:#475569">{{ m.role }}</span></td>
+                <td style="text-align:right">
+                  <button v-if="m.role !== 'superadmin'" class="btn-icon" @click="deleteManager(m)" title="Supprimer">✕</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="border-top:1px solid #f1f5f9;padding-top:14px">
+            <div style="font-size:13px;font-weight:600;color:#334155;margin-bottom:10px">Ajouter un manager</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end">
+              <div class="form-group">
+                <label>Email</label>
+                <input v-model="managerForm.email" type="email" placeholder="manager@site.fr" />
+              </div>
+              <div class="form-group">
+                <label>Mot de passe</label>
+                <input v-model="managerForm.password" type="password" placeholder="8 car. min." />
+              </div>
+              <button class="btn-sm btn-primary" style="height:36px" :disabled="saving || !managerForm.email || !managerForm.password" @click="addManager">Ajouter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`,
+});
+
+// ── Auth guard — réservé au rôle superadmin ───────────────────────────────────
+const token = localStorage.getItem('manager_token');
+
+function renderLogin(message) {
+  document.getElementById('app').innerHTML = `
+    <div style="max-width:360px;margin:80px auto">
+      <div class="card">
+        <div class="card-header"><h3>Connexion administration</h3></div>
+        <div class="card-body">
+          <div id="login-error" class="alert alert-error" style="${message ? '' : 'display:none'}">${message ?? ''}</div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label>Email</label><input id="l-email" type="email" placeholder="admin@exemple.fr" />
+          </div>
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Mot de passe</label><input id="l-pwd" type="password" />
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-login">Se connecter</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('l-email').value;
+    const pwd   = document.getElementById('l-pwd').value;
+    const errEl = document.getElementById('login-error');
+    try {
+      const res  = await fetch('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password:pwd}) });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error);
+      localStorage.setItem('manager_token', json.data.token);
+      location.reload();
+    } catch(err) { errEl.textContent = err.message; errEl.style.display = 'flex'; }
+  });
+}
+
+if (!token) {
+  renderLogin();
+} else {
+  fetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.json())
+    .then(j => {
+      if (!j.ok) { localStorage.removeItem('manager_token'); renderLogin(); return; }
+      if (j.data.role !== 'superadmin') {
+        localStorage.removeItem('manager_token');
+        renderLogin('Accès réservé aux administrateurs de la plateforme.');
+        return;
+      }
+      document.getElementById('admin-name').textContent = j.data.email ?? '';
+      app.mount('#app');
+    });
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    localStorage.removeItem('manager_token'); location.reload();
+  });
+}
+</script>
+</body>
+</html>
