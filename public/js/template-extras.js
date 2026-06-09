@@ -18,15 +18,15 @@ export const TEMPLATE_EXTRAS = `
     </div>
     <button @click="eLinkNextWeek">›</button>
     <div class="spacer"></div>
-    <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:8px;padding:3px">
+    <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:8px;padding:3px;flex-shrink:0">
       <button @click="eLinkPeriode = 'semaine'"
         :style="eLinkPeriode === 'semaine' ? 'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#1e40af;font-weight:600' : 'color:#64748b'"
-        style="border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">
+        style="border:none;border-radius:6px;padding:4px 14px;font-size:12px;cursor:pointer;white-space:nowrap">
         Semaine
       </button>
       <button @click="eLinkPeriode = 'mois'"
         :style="eLinkPeriode === 'mois' ? 'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#1e40af;font-weight:600' : 'color:#64748b'"
-        style="border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">
+        style="border:none;border-radius:6px;padding:4px 14px;font-size:12px;cursor:pointer;white-space:nowrap">
         Mois (4 sem.)
       </button>
     </div>

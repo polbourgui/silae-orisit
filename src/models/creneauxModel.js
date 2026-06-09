@@ -12,7 +12,11 @@ function normalizeTime(t) {
 
 export async function findCreneauxBySemaine(semaineId) {
   const { rows } = await pool.query(
-    `SELECT ${CRENEAU_COLS} FROM creneaux WHERE semaine_id = $1`,
+    `SELECT c.id, c.semaine_id, c.jour, c.slot_label, c.heure_debut, c.heure_fin,
+            c.poste_id, c.nb_postes, p.libelle AS poste_libelle
+     FROM creneaux c
+     LEFT JOIN postes p ON p.id = c.poste_id
+     WHERE c.semaine_id = $1`,
     [semaineId]
   );
   return rows

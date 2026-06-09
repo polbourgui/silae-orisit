@@ -165,6 +165,18 @@ const JOURS_ORDER = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'
 
 function formatTime(t) { return t ? t.slice(0, 5) : t; }
 
+function jourDate(isoWeek, jour) {
+  if (!isoWeek || !jour) return jour;
+  const [year, wStr] = isoWeek.split('-W');
+  const jan4 = new Date(parseInt(year), 0, 4);
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - (jan4.getDay() || 7) + 1 + (parseInt(wStr, 10) - 1) * 7);
+  const dayIdx = JOURS_ORDER.indexOf(jour);
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + dayIdx);
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 function weekLabel(isoWeek) {
   if (!isoWeek) return '';
   const [year, wStr] = isoWeek.split('-W');
@@ -255,7 +267,7 @@ const app = createApp({
 
     onMounted(load);
 
-    return { state, errMsg, extra, semaines, groupedBySemaine, totalCreneaux, checked, checkedCount, multiSemaine, saving, toggle, submit, weekLabel, formatTime };
+    return { state, errMsg, extra, semaines, groupedBySemaine, totalCreneaux, checked, checkedCount, multiSemaine, saving, toggle, submit, weekLabel, formatTime, jourDate };
   },
 
   template: `
@@ -318,7 +330,7 @@ const app = createApp({
           {{ weekLabel(semaineGroup.semaine.iso_week) }}
         </div>
         <div class="day-block" v-for="group in semaineGroup.days" :key="semaineGroup.semaine.iso_week + group.jour">
-          <div class="day-label">{{ group.label }}</div>
+          <div class="day-label">{{ jourDate(semaineGroup.semaine.iso_week, group.jour) }}</div>
           <div
             v-for="slot in group.slots"
             :key="slot.id"
@@ -329,7 +341,10 @@ const app = createApp({
             <div class="check-icon"></div>
             <div class="slot-info">
               <div class="slot-time">{{ formatTime(slot.heure_debut) }} – {{ formatTime(slot.heure_fin) }}</div>
-              <div class="slot-label">{{ slot.slot_label }}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+                <span class="slot-label">{{ slot.slot_label }}</span>
+                <span v-if="slot.poste_libelle" class="slot-poste">{{ slot.poste_libelle }}</span>
+              </div>
             </div>
           </div>
         </div>
