@@ -33,7 +33,12 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(express.static(join(__dirname, '..', 'public')));
+
+// Pas de cache sur les modules JS en développement
+const staticOpts = process.env.NODE_ENV === 'production'
+  ? {}
+  : { setHeaders: (res, path) => { if (path.endsWith('.js')) res.setHeader('Cache-Control', 'no-store'); } };
+app.use(express.static(join(__dirname, '..', 'public'), staticOpts));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
