@@ -21,10 +21,11 @@ function violatesRestRule(assignedCreneaux, creneau) {
     const { start: existStart, end: existEnd } = absoluteMinutes(c.jour, c.heure_debut, c.heure_fin);
     // Chevauchement direct → violation immédiate
     if (newStart < existEnd && existStart < newEnd) return true;
+    // Pour deux shifts non-chevauchants, un seul gap est positif (l'autre est négatif).
+    // Il suffit qu'un seul côté soit >= 11h : le positif est le vrai gap entre les deux.
     const gapAfter  = newStart - existEnd;
     const gapBefore = existStart - newEnd;
-    // Les deux gaps doivent être suffisants (un seul positif ne suffit pas)
-    const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED && gapBefore >= REST_MINUTES_REQUIRED;
+    const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED || gapBefore >= REST_MINUTES_REQUIRED;
     if (!hasEnoughRest) return true;
   }
   return false;
