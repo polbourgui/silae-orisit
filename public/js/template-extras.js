@@ -90,11 +90,10 @@ export const TEMPLATE_EXTRAS = `
         </td>
         <td>
           <div v-if="!eExtraPostes[e.id]" style="font-size:12px;color:#94a3b8">…</div>
+          <div v-else-if="eExtraPostes[e.id].size === 0" style="font-size:12px;color:#94a3b8">—</div>
           <div v-else style="display:flex;flex-wrap:wrap;gap:4px">
-            <span v-for="p in allPostes" :key="p.id"
-              :class="['poste-chip', eExtraPostes[e.id].has(p.id) ? 'active' : '']"
-              :style="ePostesSaving[e.id] ? 'opacity:.5;pointer-events:none' : ''"
-              @click="toggleExtraPoste(e.id, p.id)">
+            <span v-for="p in allPostes.filter(p => eExtraPostes[e.id].has(p.id))" :key="p.id"
+              class="poste-chip active">
               {{ p.libelle }}
             </span>
           </div>
