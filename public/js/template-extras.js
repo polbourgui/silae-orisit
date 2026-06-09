@@ -31,7 +31,17 @@ export const TEMPLATE_EXTRAS = `
       </button>
     </div>
   </div>
-  <p style="font-size:12px;color:#94a3b8;margin-bottom:16px">Les liens restent valables jusqu'à la publication du planning — l'extra peut modifier ses disponibilités à tout moment.</p>
+  <p style="font-size:12px;color:#94a3b8;margin-bottom:12px">Les liens restent valables jusqu'à la publication du planning — l'extra peut modifier ses disponibilités à tout moment.</p>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <span style="font-size:13px;color:#64748b;white-space:nowrap">Filtrer par poste :</span>
+    <select v-model="eFilterPoste" style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;color:#334155;background:#fff">
+      <option value="">— Tous les extras —</option>
+      <option v-for="p in allPostes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
+    </select>
+    <span v-if="eFilterPoste" style="font-size:12px;color:#64748b">{{ eFilteredExtras.length }} extra(s)</span>
+    <button v-if="eFilterPoste" @click="eFilterPoste = ''" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:13px">✕</button>
+  </div>
 
   <div v-if="eSelected.size > 0" style="display:flex;align-items:center;gap:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 16px;margin-bottom:14px">
     <span style="font-size:13px;font-weight:600;color:#0369a1">{{ eSelected.size }} extra(s) sélectionné(s)</span>
@@ -48,6 +58,10 @@ export const TEMPLATE_EXTRAS = `
     <div class="icon">👤</div>
     <p>Aucun extra enregistré.</p>
   </div>
+  <div v-else-if="eFilteredExtras.length === 0" class="empty-state">
+    <div class="icon">🔍</div>
+    <p>Aucun extra avec ce poste.</p>
+  </div>
   <table v-else class="data-table">
     <thead><tr>
       <th style="width:36px;padding-right:0">
@@ -56,7 +70,7 @@ export const TEMPLATE_EXTRAS = `
       <th>Extra</th><th>Compétences</th><th style="text-align:right">Lien disponibilités</th>
     </tr></thead>
     <tbody>
-      <tr v-for="e in eExtras" :key="e.id" @vue:mounted="loadExtraPostes(e.id)"
+      <tr v-for="e in eFilteredExtras" :key="e.id" @vue:mounted="loadExtraPostes(e.id)"
           :style="e.is_blocked ? 'opacity:.5' : ''">
         <td style="padding-right:0">
           <input type="checkbox" :checked="eSelected.has(e.id)" @change="eToggle(e.id)" style="cursor:pointer" />

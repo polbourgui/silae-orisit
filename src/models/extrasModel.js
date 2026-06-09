@@ -19,7 +19,14 @@ export async function findExtraById(extraId, siteId) {
  */
 export async function findExtrasBySite(siteId) {
   const { rows } = await pool.query(
-    `SELECT ${EXTRA_COLUMNS} FROM extras WHERE site_id = $1 ORDER BY nom, prenom`,
+    `SELECT e.${EXTRA_COLUMNS.split(', ').join(', e.')},
+            e.is_blocked,
+            COALESCE(array_agg(ep.poste_id) FILTER (WHERE ep.poste_id IS NOT NULL), '{}') AS poste_ids
+     FROM extras e
+     LEFT JOIN extras_postes ep ON ep.extra_id = e.id AND ep.site_id = e.site_id
+     WHERE e.site_id = $1
+     GROUP BY e.id
+     ORDER BY e.nom, e.prenom`,
     [siteId]
   );
   return rows;

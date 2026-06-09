@@ -8,11 +8,22 @@ export function useExtras({ showAlert, allPostes }) {
   const eLinkWeek       = ref(isoWeekFromDate(new Date()));
   const eLinkPeriode    = ref('semaine'); // 'semaine' | 'mois'
   const eLinkWeekLabel  = computed(() => eLinkWeek.value.replace('-W', ' — Semaine '));
-  const eLinkWeekBounds = computed(() => weekBoundsLabel(eLinkWeek.value));
+  const eLinkWeekBounds = computed(() => {
+    if (eLinkPeriode.value === 'semaine') return weekBoundsLabel(eLinkWeek.value);
+    const fin = offsetWeek(eLinkWeek.value, 3);
+    const debutLabel = weekBoundsLabel(eLinkWeek.value).split(' → ')[0];
+    const finLabel   = weekBoundsLabel(fin).split(' → ')[1];
+    return `${debutLabel} → ${finLabel}`;
+  });
   const eLinkPeriodeLabel = computed(() => {
     if (eLinkPeriode.value === 'semaine') return eLinkWeekLabel.value;
     const fin = offsetWeek(eLinkWeek.value, 3);
     return `${eLinkWeekLabel.value} → Semaine ${fin.split('-W')[1]}`;
+  });
+  const eFilterPoste    = ref('');
+  const eFilteredExtras = computed(() => {
+    if (!eFilterPoste.value) return eExtras.value;
+    return eExtras.value.filter(e => (e.poste_ids ?? []).includes(eFilterPoste.value));
   });
   const eSending        = ref({});
 
@@ -23,11 +34,16 @@ export function useExtras({ showAlert, allPostes }) {
   const eExtraPostes    = ref({});
   const ePostesSaving   = ref({});
 
-  const eAllSelected   = computed(() => eExtras.value.length > 0 && eExtras.value.every(e => eSelected.value.has(e.id)));
+  const eAllSelected   = computed(() => eFilteredExtras.value.length > 0 && eFilteredExtras.value.every(e => eSelected.value.has(e.id)));
   const eSelectedExtras = computed(() => eExtras.value.filter(e => eSelected.value.has(e.id)));
 
   function eToggleAll() {
-    eSelected.value = eAllSelected.value ? new Set() : new Set(eExtras.value.map(e => e.id));
+    const visibleIds = eFilteredExtras.value.map(e => e.id);
+    const allChecked = visibleIds.every(id => eSelected.value.has(id));
+    const s = new Set(eSelected.value);
+    if (allChecked) visibleIds.forEach(id => s.delete(id));
+    else visibleIds.forEach(id => s.add(id));
+    eSelected.value = s;
   }
 
   function eToggle(id) {
@@ -121,7 +137,8 @@ export function useExtras({ showAlert, allPostes }) {
   }
 
   return {
-    eExtras, eLoading, eLinkModal, eLinkWeek, eLinkPeriode, eLinkPeriodeLabel, eLinkWeekLabel, eLinkWeekBounds, eSending,
+    eExtras, eFilteredExtras, eFilterPoste,
+    eLoading, eLinkModal, eLinkWeek, eLinkPeriode, eLinkPeriodeLabel, eLinkWeekLabel, eLinkWeekBounds, eSending,
     eLinkPrevWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, -1); },
     eLinkNextWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, +1); },
     eSelected, eAllSelected, eToggleAll, eToggle, eSelectedExtras,
