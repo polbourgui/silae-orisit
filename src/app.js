@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+
+if (process.env.NODE_ENV === 'production' && !process.env.APP_BASE_URL) {
+  throw new Error('APP_BASE_URL must be set in production');
+}
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import authRouter from './routes/auth.js';
@@ -21,6 +26,19 @@ import { applyIncrementalMigrations } from './models/migrate.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],  // Vue ESM inline event handlers
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+    },
+  },
+  referrerPolicy: { policy: 'no-referrer' },
+}));
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '').split(',').filter(Boolean);
 

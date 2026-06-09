@@ -10,7 +10,7 @@ import {
   deleteCreneau,
   JOURS,
 } from '../models/creneauxModel.js';
-import { validateUUID, assertRequired } from '../utils/validators.js';
+import { validateUUID, assertRequired, assertISOWeek } from '../utils/validators.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import pool from '../models/db.js';
 
@@ -37,12 +37,13 @@ function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin }) {
 router.get('/semaine/:isoWeek', async (req, res, next) => {
   try {
     const { isoWeek } = req.params;
+    assertISOWeek(isoWeek);
     const semaine = await findOrCreateSemaine(req.siteId, isoWeek);
     const postes = await pool.query(
       'SELECT id, code_emploi, libelle FROM postes WHERE site_id = $1 ORDER BY libelle',
       [req.siteId]
     );
-    const creneaux = await findCreneauxBySemaine(semaine.id);
+    const creneaux = await findCreneauxBySemaine(semaine.id, req.siteId);
     res.json({ ok: true, data: { semaine, creneaux, postes: postes.rows } });
   } catch (err) {
     next(err);
@@ -51,6 +52,7 @@ router.get('/semaine/:isoWeek', async (req, res, next) => {
 
 router.post('/semaine/:isoWeek', async (req, res, next) => {
   try {
+    assertISOWeek(req.params.isoWeek);
     assertRequired(req.body, ['jour', 'slot_label', 'heure_debut', 'heure_fin']);
     validateCreneauFields(req.body);
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);

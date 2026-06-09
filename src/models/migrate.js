@@ -27,5 +27,13 @@ export async function applyIncrementalMigrations() {
   await pool.query(`ALTER TABLE extras ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS nb_postes INTEGER NOT NULL DEFAULT 1`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS notes TEXT`);
+
+  // Indexes de performance
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_creneaux_semaine_id ON creneaux(semaine_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_dispos_extra_semaine ON disponibilites(extra_id, semaine_id, site_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_affectations_planning ON affectations(planning_id, site_id)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_semaines_site_week ON semaines(site_id, iso_week)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_extras_postes_extra ON extras_postes(extra_id, site_id)`);
+
   logger.info({ message: 'incremental migrations OK' });
 }

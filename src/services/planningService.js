@@ -19,9 +19,12 @@ function violatesRestRule(assignedCreneaux, creneau) {
   const { start: newStart, end: newEnd } = absoluteMinutes(creneau.jour, creneau.heure_debut, creneau.heure_fin);
   for (const c of assignedCreneaux) {
     const { start: existStart, end: existEnd } = absoluteMinutes(c.jour, c.heure_debut, c.heure_fin);
+    // Chevauchement direct → violation immédiate
+    if (newStart < existEnd && existStart < newEnd) return true;
     const gapAfter  = newStart - existEnd;
     const gapBefore = existStart - newEnd;
-    const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED || gapBefore >= REST_MINUTES_REQUIRED;
+    // Les deux gaps doivent être suffisants (un seul positif ne suffit pas)
+    const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED && gapBefore >= REST_MINUTES_REQUIRED;
     if (!hasEnoughRest) return true;
   }
   return false;

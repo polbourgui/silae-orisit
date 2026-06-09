@@ -19,14 +19,15 @@ router.get('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, r
     const extraPostes = await findPostesByExtra(req.extra.id, req.extra.site_id);
     const extraPosteIds = new Set(extraPostes.map(p => p.id));
 
-    const semainesData = [];
-    for (const isoWeek of req.semaines) {
+    const semainesData = await Promise.all(req.semaines.map(async (isoWeek) => {
       const semaine = await findOrCreateSemaine(req.extra.site_id, isoWeek);
-      const allCreneaux = await findCreneauxBySemaine(semaine.id);
+      const [allCreneaux, dispos] = await Promise.all([
+        findCreneauxBySemaine(semaine.id, req.extra.site_id),
+        findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id),
+      ]);
       const creneaux = allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id));
-      const dispos = await findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id);
-      semainesData.push({ semaine, creneaux, checked_ids: dispos.map(d => d.creneau_id) });
-    }
+      return { semaine, creneaux, checked_ids: dispos.map(d => d.creneau_id) };
+    }));
 
     res.json({ ok: true, data: { extra: req.extra, semaines: semainesData } });
   } catch (err) {
@@ -48,7 +49,7 @@ router.post('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, 
     let totalSaved = 0;
     for (const isoWeek of req.semaines) {
       const semaine = await findOrCreateSemaine(req.extra.site_id, isoWeek);
-      const allCreneaux = await findCreneauxBySemaine(semaine.id);
+      const allCreneaux = await findCreneauxBySemaine(semaine.id, req.extra.site_id);
       const allowedIds = new Set(
         allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id)).map(c => c.id)
       );

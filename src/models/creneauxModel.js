@@ -10,14 +10,16 @@ function normalizeTime(t) {
   return t ? t.slice(0, 5) : t;
 }
 
-export async function findCreneauxBySemaine(semaineId) {
+export async function findCreneauxBySemaine(semaineId, siteId = null) {
   const { rows } = await pool.query(
     `SELECT c.id, c.semaine_id, c.jour, c.slot_label, c.heure_debut, c.heure_fin,
-            c.poste_id, c.nb_postes, p.libelle AS poste_libelle
+            c.poste_id, c.nb_postes, c.notes, p.libelle AS poste_libelle
      FROM creneaux c
-     LEFT JOIN postes p ON p.id = c.poste_id
-     WHERE c.semaine_id = $1`,
-    [semaineId]
+     JOIN semaines s ON s.id = c.semaine_id
+     LEFT JOIN postes p ON p.id = c.poste_id AND p.site_id = s.site_id
+     WHERE c.semaine_id = $1
+       AND ($2::uuid IS NULL OR s.site_id = $2)`,
+    [semaineId, siteId ?? null]
   );
   return rows
     .map(r => ({ ...r, heure_debut: normalizeTime(r.heure_debut), heure_fin: normalizeTime(r.heure_fin) }))

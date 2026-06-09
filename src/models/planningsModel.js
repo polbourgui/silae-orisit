@@ -72,3 +72,29 @@ export async function clearAffectations(planningId, siteId) {
     [planningId, siteId]
   );
 }
+
+export async function createAffectationsBatch(planningId, proposals, siteId) {
+  if (!proposals.length) return [];
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const inserted = [];
+    for (const { extra_id, creneau_id } of proposals) {
+      const { rows } = await client.query(
+        `INSERT INTO affectations (planning_id, extra_id, creneau_id, site_id)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (extra_id, creneau_id) DO NOTHING
+         RETURNING ${AFFECTATION_COLS}`,
+        [planningId, extra_id, creneau_id, siteId]
+      );
+      if (rows[0]) inserted.push(rows[0]);
+    }
+    await client.query('COMMIT');
+    return inserted;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}

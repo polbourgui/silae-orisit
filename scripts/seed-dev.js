@@ -6,7 +6,7 @@
  * Usage : node scripts/seed-dev.js
  */
 import 'dotenv/config';
-import { createHash } from 'crypto';
+import bcrypt from 'bcrypt';
 import pool from '../src/models/db.js';
 
 function currentISOWeek() {
@@ -56,7 +56,7 @@ await pool.query(`
 console.log('✓ Site');
 
 // ── Manager ─────────────────────────────────────────────────────────────────
-const hash = createHash('sha256').update('test1234').digest('hex');
+const hash = await bcrypt.hash('test1234', 12);
 await pool.query(`
   INSERT INTO managers (site_id, email, password_hash, role)
   VALUES ($1, 'admin@test.fr', $2, 'admin')

@@ -26,7 +26,7 @@ export function generateManagerToken(manager) {
  * @returns {string}
  */
 export function generateMagicLinkToken({ type, extraId, siteId, semaines, contratId, tokenVersion }) {
-  const expiresIn = type === 'contrat' ? '7d' : '90d';
+  const expiresIn = type === 'contrat' ? '7d' : '14d';
   const payload = {
     type,
     extra_id: extraId,

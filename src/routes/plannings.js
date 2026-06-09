@@ -4,14 +4,15 @@ import siteScope from '../middleware/siteScope.js';
 import { findOrCreateSemaine } from '../models/semainModel.js';
 import {
   findPlanningBySemaine, createPlanning, publishPlanning,
-  findAffectations, createAffectation, addAffectation, removeAffectationByExtra, clearAffectations,
+  findAffectations, createAffectation, addAffectation, removeAffectationByExtra,
+  clearAffectations, createAffectationsBatch,
 } from '../models/planningsModel.js';
 import { findCreneauxBySemaine } from '../models/creneauxModel.js';
 import { findExtrasBySite } from '../models/extrasModel.js';
 import { getPostesByExtras } from '../models/postesModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
 import { greedyScheduler, checkAffectationConflict } from '../services/planningService.js';
-import { validateUUID, assertRequired } from '../utils/validators.js';
+import { validateUUID, assertRequired, assertISOWeek } from '../utils/validators.js';
 import { NotFoundError, ValidationError, ForbiddenError } from '../errors/index.js';
 import logger from '../logger.js';
 
@@ -21,8 +22,9 @@ router.use(requireManagerAuth, siteScope);
 // Charge tout ce dont la vue planning a besoin en un seul appel
 router.get('/week/:isoWeek', async (req, res, next) => {
   try {
+    assertISOWeek(req.params.isoWeek);
     const semaine   = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
-    const creneaux  = await findCreneauxBySemaine(semaine.id);
+    const creneaux  = await findCreneauxBySemaine(semaine.id, req.siteId);
     const extras    = await findExtrasBySite(req.siteId);
     const dispos    = await findDisponibilites(semaine.id, req.siteId);
     const planning  = await findPlanningBySemaine(semaine.id, req.siteId);
@@ -52,6 +54,7 @@ router.get('/week/:isoWeek', async (req, res, next) => {
 // Lance l'algo greedy et remplace les affectations existantes
 router.post('/week/:isoWeek/propose', async (req, res, next) => {
   try {
+    assertISOWeek(req.params.isoWeek);
     const semaine  = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
     const creneaux = await findCreneauxBySemaine(semaine.id);
     const extras   = await findExtrasBySite(req.siteId);
@@ -68,9 +71,7 @@ router.post('/week/:isoWeek/propose', async (req, res, next) => {
     await clearAffectations(planning.id, req.siteId);
 
     const proposals = greedyScheduler(extrasWithPostes, creneaux, dispos);
-    for (const { extra_id, creneau_id } of proposals) {
-      await createAffectation(planning.id, extra_id, creneau_id, req.siteId);
-    }
+    await createAffectationsBatch(planning.id, proposals, req.siteId);
 
     const affectations = await findAffectations(planning.id, req.siteId);
     logger.info({ msg: 'Planning proposé', planningId: planning.id, count: proposals.length });
@@ -83,6 +84,7 @@ router.post('/week/:isoWeek/propose', async (req, res, next) => {
 // Ajoute un extra à un créneau (jusqu'à nb_postes)
 router.put('/week/:isoWeek/affectation/:creneauId', async (req, res, next) => {
   try {
+    assertISOWeek(req.params.isoWeek);
     if (!validateUUID(req.params.creneauId)) throw new ValidationError('UUID invalide');
     const { extra_id } = req.body;
     if (!extra_id || !validateUUID(extra_id)) throw new ValidationError('extra_id requis et doit être un UUID valide');

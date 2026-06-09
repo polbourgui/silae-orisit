@@ -6,6 +6,8 @@ import { findExtrasBySite } from '../models/extrasModel.js';
 import { findSemaineBySite } from '../models/semainModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
 import { findPlanningBySemaine, createPlanning, createAffectation } from '../models/planningsModel.js';
+import { findCreneauxBySemaine } from '../models/creneauxModel.js';
+import { getPostesByExtras } from '../models/postesModel.js';
 import { greedyScheduler } from '../services/planningService.js';
 import { getCurrentISOWeek } from '../utils/dates.js';
 
@@ -33,11 +35,10 @@ async function generatePlanningProposalsForAllSites() {
         continue;
       }
       const extras = await findExtrasBySite(site.id);
-      const { rows: creneaux } = await pool.query(
-        'SELECT id, heure_debut, heure_fin FROM creneaux WHERE semaine_id = $1',
-        [semaine.id]
-      );
-      const proposals = greedyScheduler(extras, creneaux, dispos);
+      const creneaux = await findCreneauxBySemaine(semaine.id, site.id);
+      const postesMap = await getPostesByExtras(extras.map(e => e.id), site.id);
+      const extrasWithPostes = extras.map(e => ({ ...e, poste_ids: postesMap[e.id] ?? [] }));
+      const proposals = greedyScheduler(extrasWithPostes, creneaux, dispos);
       const planning = await createPlanning(semaine.id, site.id);
       for (const { extra_id, creneau_id } of proposals) {
         await createAffectation(planning.id, extra_id, creneau_id, site.id);

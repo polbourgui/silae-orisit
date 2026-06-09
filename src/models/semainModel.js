@@ -10,11 +10,16 @@ export async function findOrCreateSemaine(siteId, isoWeek) {
   const { rows } = await pool.query(
     `INSERT INTO semaines (site_id, iso_week)
      VALUES ($1, $2)
-     ON CONFLICT (site_id, iso_week) DO UPDATE SET iso_week = EXCLUDED.iso_week
+     ON CONFLICT (site_id, iso_week) DO NOTHING
      RETURNING ${SEMAINE_COLUMNS}`,
     [siteId, isoWeek]
   );
-  return rows[0];
+  if (rows[0]) return rows[0];
+  const { rows: existing } = await pool.query(
+    `SELECT ${SEMAINE_COLUMNS} FROM semaines WHERE site_id = $1 AND iso_week = $2`,
+    [siteId, isoWeek]
+  );
+  return existing[0];
 }
 
 /**

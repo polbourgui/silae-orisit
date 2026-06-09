@@ -43,11 +43,17 @@ export async function setPostesForExtra(extraId, siteId, posteIds) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // Ne garder que les poste_ids appartenant réellement à ce site
+    const { rows: validPostes } = await client.query(
+      `SELECT id FROM postes WHERE id = ANY($1) AND site_id = $2`,
+      [posteIds, siteId]
+    );
+    const validIds = validPostes.map(p => p.id);
     await client.query(
       'DELETE FROM extras_postes WHERE extra_id = $1 AND site_id = $2',
       [extraId, siteId]
     );
-    for (const posteId of posteIds) {
+    for (const posteId of validIds) {
       await client.query(
         'INSERT INTO extras_postes (extra_id, poste_id, site_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
         [extraId, posteId, siteId]
