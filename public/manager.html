@@ -147,6 +147,7 @@ if (!token) {
     .then(j => {
       if (!j.ok) { localStorage.removeItem('manager_token'); location.reload(); return; }
       document.getElementById('manager-name').textContent = j.data.email ?? '';
+      if (j.data.site?.nom) document.getElementById('site-name').textContent = j.data.site.nom;
     });
   document.getElementById('btn-logout').addEventListener('click', () => {
     localStorage.removeItem('manager_token'); location.reload();

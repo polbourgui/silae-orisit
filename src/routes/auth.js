@@ -41,8 +41,24 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   }
 });
 
-router.get('/me', requireManagerAuth, (req, res) => {
-  res.json({ ok: true, data: req.manager });
+router.get('/me', requireManagerAuth, async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT m.email, s.id AS site_id, s.nom AS site_nom, s.siret AS site_siret
+       FROM managers m JOIN sites s ON s.id = m.site_id
+       WHERE m.id = $1 AND m.site_id = $2`,
+      [req.manager.manager_id, req.manager.site_id]
+    );
+    if (rows.length === 0) throw new ValidationError('Manager introuvable');
+    const r = rows[0];
+    res.json({ ok: true, data: {
+      ...req.manager,
+      email: r.email,
+      site: { id: r.site_id, nom: r.site_nom, siret: r.site_siret },
+    } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
