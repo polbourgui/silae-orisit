@@ -50,7 +50,7 @@ export const TEMPLATE_CRENEAUX = `
         </tr></thead>
         <tbody>
           <template v-for="row in tableRows" :key="row.isSeparator ? 'sep-'+row.jour : row.id">
-            <tr v-if="row.isSeparator" class="day-separator"><td colspan="8">{{ row.jour }}</td></tr>
+            <tr v-if="row.isSeparator" class="day-separator"><td colspan="8"><span :class="['jour-badge','jour-'+row.jour]" style="margin-right:8px">{{ JOURS_COURT[row.jour] }}</span>{{ row.dateLabel }}</td></tr>
             <tr v-else>
               <td><span :class="['jour-badge','jour-'+row.jour]">{{ JOURS_COURT[row.jour] }}</span></td>
               <td>{{ row.slot_label }}</td>

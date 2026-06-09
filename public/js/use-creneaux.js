@@ -17,7 +17,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
 
   const weekLabel   = computed(() => currentWeek.value.replace('-W', ' — Semaine '));
   const boundsLabel = computed(() => weekBoundsLabel(currentWeek.value));
-  const tableRows   = computed(() => groupByJour(creneaux.value));
+  const tableRows   = computed(() => groupByJour(creneaux.value, currentWeek.value));
   const totalHeures = computed(() =>
     creneaux.value.reduce((sum, c) => {
       const [dh, dm] = c.heure_debut.split(':').map(Number);

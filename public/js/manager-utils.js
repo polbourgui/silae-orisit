@@ -57,12 +57,25 @@ export function duration(debut, fin) {
   return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
 }
 
-export function groupByJour(creneaux) {
+export function jourDate(isoWeek, jour) {
+  const [y, wStr] = isoWeek.split('-W');
+  const year = +y, week = +wStr;
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const mon = new Date(jan4);
+  mon.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() || 7) - 1) + (week - 1) * 7);
+  const idx = JOURS.indexOf(jour);
+  const d = new Date(mon);
+  d.setUTCDate(mon.getUTCDate() + idx);
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+export function groupByJour(creneaux, isoWeek) {
   const grouped = [];
   let currentJour = null;
   for (const c of creneaux) {
     if (c.jour !== currentJour) {
-      grouped.push({ isSeparator: true, jour: c.jour });
+      const dateLabel = isoWeek ? jourDate(isoWeek, c.jour) : c.jour;
+      grouped.push({ isSeparator: true, jour: c.jour, dateLabel });
       currentJour = c.jour;
     }
     grouped.push({ isSeparator: false, ...c });
