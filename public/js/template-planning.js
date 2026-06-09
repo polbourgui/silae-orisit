@@ -76,7 +76,7 @@ export const TEMPLATE_PLANNING = `
             <span v-else style="font-size:11px;color:#94a3b8;padding-left:4px">poste {{ row.slotIndex + 1 }}/{{ row.nb }}</span>
           </div>
 
-          <div v-if="pSearchState[row.slotKey]" style="position:relative">
+          <div v-if="pSearchState[row.slotKey]" :style="{ position: 'relative', zIndex: pSearchState[row.slotKey].open ? 50 : 'auto' }">
             <div :class="['assignee-field', row.extra ? 'is-filled' : '', pSearchState[row.slotKey].open ? 'is-focused' : '']">
               <div v-if="row.extra" class="avatar" :style="{ background: avatarColor(row.extra.id) }">
                 {{ initials(row.extra.nom, row.extra.prenom) }}
