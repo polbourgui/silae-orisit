@@ -72,6 +72,32 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     finally { pSaving.value = false; }
   }
 
+  // Détecte les conflits horaires côté client (même logique que le backend)
+  function detectConflict(targetCreneau, assignedCreneaux) {
+    const JOURS = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+    const REST = 11 * 60;
+    function toAbs(jour, debut, fin) {
+      const base = JOURS.indexOf(jour) * 24 * 60;
+      const [dh, dm] = debut.split(':').map(Number);
+      const [fh, fm] = fin.split(':').map(Number);
+      const start = base + dh * 60 + dm;
+      let end = base + fh * 60 + fm;
+      if (end <= start) end += 24 * 60;
+      return { start, end };
+    }
+    const { start: ns, end: ne } = toAbs(targetCreneau.jour, targetCreneau.heure_debut, targetCreneau.heure_fin);
+    for (const c of assignedCreneaux) {
+      const { start: es, end: ee } = toAbs(c.jour, c.heure_debut, c.heure_fin);
+      if (ns < ee && es < ne) return { type: 'overlap', label: 'chevauchement' };
+      const gap = Math.max(ns - ee, es - ne);
+      if (gap < REST) {
+        const h = Math.floor(gap / 60), m = gap % 60;
+        return { type: 'rest', label: `repos ${h}h${m ? String(m).padStart(2,'0') : ''} / 11h` };
+      }
+    }
+    return null;
+  }
+
   function filteredExtras(slotKey) {
     const [creneauId] = slotKey.split('::');
     const state = pSearchState.value[slotKey];
@@ -82,15 +108,23 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     const alreadyAssigned = new Set(pAffectations.value.filter(a => a.creneau_id === creneauId).map(a => a.extra_id));
     return pExtras.value
       .filter(e => !alreadyAssigned.has(e.id))
-      .map(e => ({
-        ...e,
-        hasDispo:       e.dispo_creneau_ids.includes(creneauId),
-        hasFilledDispo: e.dispo_creneau_ids.length > 0,
-        hasPoste:       creneauPosteId ? (e.poste_ids ?? []).includes(creneauPosteId) : true,
-      }))
+      .map(e => {
+        const assignedCreneaux = pAffectations.value
+          .filter(a => a.extra_id === e.id)
+          .map(a => pCreneaux.value.find(c => c.id === a.creneau_id))
+          .filter(Boolean);
+        const conflict = creneau ? detectConflict(creneau, assignedCreneaux) : null;
+        return {
+          ...e,
+          hasDispo:       e.dispo_creneau_ids.includes(creneauId),
+          hasFilledDispo: e.dispo_creneau_ids.length > 0,
+          hasPoste:       creneauPosteId ? (e.poste_ids ?? []).includes(creneauPosteId) : true,
+          conflict,
+        };
+      })
       .filter(e => q ? `${e.prenom} ${e.nom}`.toLowerCase().includes(q) : e.hasDispo || !e.hasFilledDispo)
       .sort((a, b) => {
-        const score = e => (e.hasDispo ? 0 : (e.hasFilledDispo ? 99 : 2)) + (e.hasPoste ? 0 : 1);
+        const score = e => (e.conflict ? 50 : 0) + (e.hasDispo ? 0 : (e.hasFilledDispo ? 99 : 2)) + (e.hasPoste ? 0 : 1);
         return score(a) - score(b);
       });
   }

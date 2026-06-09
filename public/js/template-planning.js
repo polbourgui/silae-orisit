@@ -104,13 +104,20 @@ export const TEMPLATE_PLANNING = `
                   :class="['suggestion-item', idx === pSearchState[row.slotKey].activeIdx ? 'active' : '']"
                   @mousedown.prevent="selectExtra(row.slotKey, e.id)">
                   <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
-                  <span class="extra-name">{{ e.prenom }} {{ e.nom }}</span>
-                  <span v-if="row.poste_id" class="dispo-tag" :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
-                    {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                  <span class="extra-name" :style="e.conflict ? 'opacity:.5' : ''">{{ e.prenom }} {{ e.nom }}</span>
+                  <span v-if="e.conflict"
+                    :style="e.conflict.type === 'overlap' ? 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca' : 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa'"
+                    style="font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap;flex-shrink:0">
+                    ⚠ {{ e.conflict.label }}
                   </span>
-                  <span class="dispo-tag" :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
-                    {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
-                  </span>
+                  <template v-else>
+                    <span v-if="row.poste_id" class="dispo-tag" :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
+                      {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                    </span>
+                    <span class="dispo-tag" :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
+                      {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
+                    </span>
+                  </template>
                 </div>
               </div>
             </Teleport>
