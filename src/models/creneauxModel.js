@@ -2,7 +2,7 @@ import pool from './db.js';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 const JOUR_ORDER = Object.fromEntries(JOURS.map((j, i) => [j, i]));
-const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes';
+const CRENEAU_COLS = 'id, semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes, notes';
 
 export { JOURS };
 
@@ -27,14 +27,25 @@ export async function findCreneauxBySemaine(semaineId) {
     );
 }
 
-export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId, nbPostes = 1 }) {
+export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId, nbPostes = 1, notes = null }) {
   const { rows } = await pool.query(
-    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes, notes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING ${CRENEAU_COLS}`,
-    [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes]
+    [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes, notes ?? null]
   );
   return rows[0];
+}
+
+export async function updateCreneau(creneauId, semaineId, { slotLabel, heureDebut, heureFin, posteId, nbPostes, notes }) {
+  const { rows } = await pool.query(
+    `UPDATE creneaux
+     SET slot_label = $1, heure_debut = $2, heure_fin = $3, poste_id = $4, nb_postes = $5, notes = $6
+     WHERE id = $7 AND semaine_id = $8
+     RETURNING ${CRENEAU_COLS}`,
+    [slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes, notes ?? null, creneauId, semaineId]
+  );
+  return rows[0] ?? null;
 }
 
 export async function createCreneauxBatch(semaineId, creneaux) {

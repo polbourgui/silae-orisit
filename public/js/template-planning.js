@@ -63,15 +63,25 @@ export const TEMPLATE_PLANNING = `
           <div style="font-variant-numeric:tabular-nums;font-size:12px;font-weight:600;color:#334155;white-space:nowrap;min-width:90px">
             <template v-if="row.slotIndex === 0">{{ row.heure_debut }} → {{ row.heure_fin }}</template>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
             <template v-if="row.slotIndex === 0">
-              <span style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.slot_label }}</span>
-              <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
-                {{ row.poste.libelle }}
-              </span>
-              <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
-                {{ row.nb }} postes
-              </span>
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.slot_label }}</span>
+                  <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
+                    {{ row.poste.libelle }}
+                  </span>
+                  <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
+                    {{ row.nb }} postes
+                  </span>
+                </div>
+                <div v-if="row.notes" style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:2px 7px;margin-top:3px;display:inline-block;max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  📋 {{ row.notes }}
+                </div>
+              </div>
+              <button v-if="!pIsPublished" @click="openEditCreneau(row)"
+                style="flex-shrink:0;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 8px;font-size:11px;color:#64748b;cursor:pointer;margin-left:4px"
+                title="Modifier ce créneau">✏</button>
             </template>
             <span v-else style="font-size:11px;color:#94a3b8;padding-left:4px">poste {{ row.slotIndex + 1 }}/{{ row.nb }}</span>
           </div>
@@ -132,6 +142,57 @@ export const TEMPLATE_PLANNING = `
 
       </template>
     </template>
+  </div>
+
+  <!-- Modal édition créneau -->
+  <div v-if="pEditModal" class="modal-overlay" @click.self="pEditModal = null">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <h3>Modifier le créneau</h3>
+        <button class="modal-close" @click="pEditModal = null">✕</button>
+      </div>
+      <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Début</label>
+            <input type="time" v-model="pEditForm.heure_debut" />
+          </div>
+          <div class="form-group">
+            <label>Fin</label>
+            <input type="time" v-model="pEditForm.heure_fin" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Libellé</label>
+          <input type="text" v-model="pEditForm.slot_label" placeholder="ex: Service midi" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Poste requis</label>
+            <select v-model="pEditForm.poste_id">
+              <option value="">— Aucun —</option>
+              <option v-for="p in allPostes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nombre de postes</label>
+            <input type="number" v-model.number="pEditForm.nb_postes" min="1" max="20" style="text-align:center" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes pour le staff <span style="font-weight:400;color:#94a3b8">(facultatif)</span></label>
+          <textarea v-model="pEditForm.notes" rows="2"
+            placeholder="ex : Privatisation — tenue noire propre exigée"
+            style="resize:vertical;font-size:13px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100%"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+          <button class="btn-sm" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0" @click="pEditModal = null">Annuler</button>
+          <button class="btn-sm btn-primary" :disabled="pEditSaving" @click="saveEditCreneau">
+            {{ pEditSaving ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   </template>
 `;

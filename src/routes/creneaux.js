@@ -5,6 +5,7 @@ import { findOrCreateSemaine } from '../models/semainModel.js';
 import {
   findCreneauxBySemaine,
   createCreneau,
+  updateCreneau,
   createCreneauxBatch,
   deleteCreneau,
   JOURS,
@@ -86,6 +87,29 @@ router.post('/semaine/:isoWeek/batch', async (req, res, next) => {
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
     const inserted = await createCreneauxBatch(semaine.id, creneaux);
     res.status(201).json({ ok: true, data: { count: inserted.length, creneaux: inserted } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/semaine/:isoWeek/:creneauId', async (req, res, next) => {
+  try {
+    if (!validateUUID(req.params.creneauId)) throw new ValidationError('UUID invalide');
+    assertRequired(req.body, ['jour', 'slot_label', 'heure_debut', 'heure_fin']);
+    validateCreneauFields(req.body);
+    const nbPostes = req.body.nb_postes != null ? parseInt(req.body.nb_postes, 10) : 1;
+    if (!Number.isInteger(nbPostes) || nbPostes < 1 || nbPostes > 20) throw new ValidationError('nb_postes doit être un entier entre 1 et 20');
+    const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
+    const updated = await updateCreneau(req.params.creneauId, semaine.id, {
+      slotLabel:  req.body.slot_label.trim(),
+      heureDebut: req.body.heure_debut,
+      heureFin:   req.body.heure_fin,
+      posteId:    req.body.poste_id ?? null,
+      nbPostes,
+      notes:      req.body.notes?.trim() || null,
+    });
+    if (!updated) throw new NotFoundError('Créneau introuvable');
+    res.json({ ok: true, data: updated });
   } catch (err) {
     next(err);
   }

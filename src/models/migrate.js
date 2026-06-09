@@ -26,5 +26,6 @@ export async function applyIncrementalMigrations() {
   `);
   await pool.query(`ALTER TABLE extras ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS nb_postes INTEGER NOT NULL DEFAULT 1`);
+  await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS notes TEXT`);
   logger.info({ message: 'incremental migrations OK' });
 }
