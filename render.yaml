@@ -1,0 +1,35 @@
+# Blueprint Render — https://render.com/docs/blueprint-spec
+# Déploiement : Dashboard Render → New → Blueprint → sélectionner ce repo.
+# Crée le serveur web + la base PostgreSQL, génère les secrets JWT,
+# lance les migrations et seed les données de démo au démarrage.
+
+databases:
+  - name: silae-orisit-db
+    plan: free          # expire après 30 jours — suffisant pour une démo
+    databaseName: silae_orisit
+    user: silae
+
+services:
+  - type: web
+    name: silae-orisit
+    runtime: node
+    plan: free          # mise en veille après inactivité (~30 s de réveil)
+    buildCommand: npm ci
+    startCommand: npm run start:render
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: silae-orisit-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_MAGIC_LINK_SECRET
+        generateValue: true
+      # Seed les données de démo à chaque démarrage (idempotent).
+      # Passer à "false" une fois la démo peuplée pour figer les données.
+      - key: SEED_ON_BOOT
+        value: "true"
+      # APP_BASE_URL est déduite automatiquement de RENDER_EXTERNAL_URL (src/config.js)

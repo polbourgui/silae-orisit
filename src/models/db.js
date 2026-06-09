@@ -9,6 +9,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000,
   statement_timeout: 15000,
+  ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 pool.on('error', (err) => {

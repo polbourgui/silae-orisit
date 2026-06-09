@@ -1,11 +1,7 @@
-import 'dotenv/config';
+import './config.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-
-if (process.env.NODE_ENV === 'production' && !process.env.APP_BASE_URL) {
-  throw new Error('APP_BASE_URL must be set in production');
-}
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import authRouter from './routes/auth.js';
@@ -43,6 +39,8 @@ app.use(helmet({
 }));
 
 const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? '').split(',').filter(Boolean);
+// L'origine de l'app elle-même est toujours autorisée (requêtes same-origin avec header Origin)
+if (process.env.APP_BASE_URL) allowedOrigins.push(process.env.APP_BASE_URL.replace(/\/$/, ''));
 
 app.use(cors({
   origin: (origin, callback) => {

@@ -8,7 +8,10 @@ import pg from 'pg';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = join(__dirname, '..', 'migrations');
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  ...(process.env.PGSSL === 'true' ? { ssl: { rejectUnauthorized: false } } : {}),
+});
 
 async function run() {
   const client = await pool.connect();
