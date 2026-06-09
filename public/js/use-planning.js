@@ -188,51 +188,6 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     };
   }
 
-  // ── Édition de créneau ────────────────────────────────────────────────────
-  const pEditModal  = ref(null); // { creneau } | null
-  const pEditForm   = ref({});
-  const pEditSaving = ref(false);
-
-  function openEditCreneau(creneau) {
-    pEditForm.value = {
-      slot_label:  creneau.slot_label,
-      heure_debut: creneau.heure_debut,
-      heure_fin:   creneau.heure_fin,
-      poste_id:    creneau.poste_id ?? '',
-      nb_postes:   creneau.nb_postes ?? 1,
-      notes:       creneau.notes ?? '',
-    };
-    pEditModal.value = { creneau };
-  }
-
-  async function saveEditCreneau() {
-    if (!pEditModal.value) return;
-    pEditSaving.value = true;
-    try {
-      const updated = await apiFetch(
-        `/creneaux/semaine/${currentWeek.value}/${pEditModal.value.creneau.id}`,
-        { method: 'PATCH', body: JSON.stringify({ ...pEditForm.value, poste_id: pEditForm.value.poste_id || null }) }
-      );
-      pCreneaux.value = pCreneaux.value.map(c => c.id === updated.id ? updated : c);
-      // Resync pSearchState si nb_postes a changé
-      const nb = updated.nb_postes ?? 1;
-      const state = { ...pSearchState.value };
-      for (let i = 0; i < nb; i++) {
-        const key = `${updated.id}::${i}`;
-        if (!state[key]) state[key] = { query: '', open: false, activeIdx: 0, dropRect: null };
-      }
-      // Retirer les slots excédentaires
-      Object.keys(state).forEach(k => {
-        const [id, idx] = k.split('::');
-        if (id === updated.id && parseInt(idx) >= nb) delete state[k];
-      });
-      pSearchState.value = state;
-      pEditModal.value = null;
-      showAlert('success', 'Créneau mis à jour');
-    } catch (err) { showAlert('error', err.message); }
-    finally { pEditSaving.value = false; }
-  }
-
   watch(currentWeek, () => { if (activeView.value === 'planning') loadPlanning(); });
 
   return {
@@ -241,6 +196,5 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     pTableRows, pNbPourvus, pNbTotal, pSearchState,
     loadPlanning, proposeAlgo, publishPlanning,
     filteredExtras, openSearch, closeSearch, selectExtra, clearExtra, dropStyle,
-    pEditModal, pEditForm, pEditSaving, openEditCreneau, saveEditCreneau,
   };
 }

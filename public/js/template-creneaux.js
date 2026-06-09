@@ -46,11 +46,11 @@ export const TEMPLATE_CRENEAUX = `
       <table v-else>
         <thead><tr>
           <th>Jour</th><th>Libellé</th><th>Horaires</th><th>Durée</th><th>Poste</th>
-          <th style="text-align:center" title="Nombre de postes">Qté</th><th></th>
+          <th style="text-align:center" title="Nombre de postes">Qté</th><th>Notes</th><th></th>
         </tr></thead>
         <tbody>
           <template v-for="row in tableRows" :key="row.isSeparator ? 'sep-'+row.jour : row.id">
-            <tr v-if="row.isSeparator" class="day-separator"><td colspan="7">{{ row.jour }}</td></tr>
+            <tr v-if="row.isSeparator" class="day-separator"><td colspan="8">{{ row.jour }}</td></tr>
             <tr v-else>
               <td><span :class="['jour-badge','jour-'+row.jour]">{{ JOURS_COURT[row.jour] }}</span></td>
               <td>{{ row.slot_label }}</td>
@@ -58,11 +58,70 @@ export const TEMPLATE_CRENEAUX = `
               <td style="color:#64748b">{{ duration(row.heure_debut, row.heure_fin) }}</td>
               <td style="color:#475569;font-size:12px">{{ posteLabel(row.poste_id) }}</td>
               <td style="text-align:center;font-size:12px;font-weight:600;color:#334155">{{ row.nb_postes ?? 1 }}</td>
-              <td><button class="btn-icon" @click="deleteCreneau(row.id)" title="Supprimer">✕</button></td>
+              <td style="max-width:180px">
+                <span v-if="row.notes" style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:1px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:170px" :title="row.notes">
+                  📋 {{ row.notes }}
+                </span>
+              </td>
+              <td style="white-space:nowrap">
+                <button class="btn-icon" @click="openEdit(row)" title="Modifier" style="margin-right:4px">✏</button>
+                <button class="btn-icon" @click="deleteCreneau(row.id)" title="Supprimer">✕</button>
+              </td>
             </tr>
           </template>
         </tbody>
       </table>
+
+  <!-- Modal édition -->
+  <div v-if="editModal" class="modal-overlay" @click.self="editModal = null">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-header">
+        <h3>Modifier le créneau</h3>
+        <button class="modal-close" @click="editModal = null">✕</button>
+      </div>
+      <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Début</label>
+            <input type="time" v-model="editForm.heure_debut" />
+          </div>
+          <div class="form-group">
+            <label>Fin</label>
+            <input type="time" v-model="editForm.heure_fin" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Libellé</label>
+          <input type="text" v-model="editForm.slot_label" placeholder="ex: Service midi" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>Poste requis</label>
+            <select v-model="editForm.poste_id">
+              <option value="">— Aucun —</option>
+              <option v-for="p in postes" :key="p.id" :value="p.id">{{ p.libelle }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Nombre de postes</label>
+            <input type="number" v-model.number="editForm.nb_postes" min="1" max="20" style="text-align:center" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes pour le staff <span style="font-weight:400;color:#94a3b8">(facultatif)</span></label>
+          <textarea v-model="editForm.notes" rows="2"
+            placeholder="ex : Privatisation — tenue noire propre exigée"
+            style="resize:vertical;font-size:13px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;width:100%"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn-sm" style="background:#f1f5f9;color:#334155;border:1px solid #e2e8f0" @click="editModal = null">Annuler</button>
+          <button class="btn-sm btn-primary" :disabled="editSaving" @click="saveEdit">
+            {{ editSaving ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:16px">

@@ -171,6 +171,39 @@ export function useCreneaux({ currentWeek, showAlert }) {
     return postes.value.find(p => p.id === posteId)?.libelle ?? '—';
   }
 
+  // ── Édition inline ─────────────────────────────────────────────────────────
+  const editModal  = ref(null);
+  const editForm   = ref({});
+  const editSaving = ref(false);
+
+  function openEdit(creneau) {
+    editForm.value = {
+      slot_label:  creneau.slot_label,
+      heure_debut: creneau.heure_debut,
+      heure_fin:   creneau.heure_fin,
+      poste_id:    creneau.poste_id ?? '',
+      nb_postes:   creneau.nb_postes ?? 1,
+      notes:       creneau.notes ?? '',
+      jour:        creneau.jour,
+    };
+    editModal.value = creneau;
+  }
+
+  async function saveEdit() {
+    if (!editModal.value) return;
+    editSaving.value = true;
+    try {
+      const updated = await apiFetch(
+        `/creneaux/semaine/${currentWeek.value}/${editModal.value.id}`,
+        { method: 'PATCH', body: JSON.stringify({ ...editForm.value, poste_id: editForm.value.poste_id || null }) }
+      );
+      creneaux.value = creneaux.value.map(c => c.id === updated.id ? updated : c);
+      editModal.value = null;
+      showAlert('success', 'Créneau mis à jour');
+    } catch (err) { showAlert('error', err.message); }
+    finally { editSaving.value = false; }
+  }
+
   watch(currentWeek, loadWeek);
   onMounted(() => { loadWeek(); loadPresets(); });
 
@@ -181,5 +214,6 @@ export function useCreneaux({ currentWeek, showAlert }) {
     onFileChange, onDrop, cancelImport, confirmImport, posteLabel,
     presets, presetsEditOpen, presetForm, presetSaving, addPreset, removePreset,
     loadWeek, loadPresets,
+    editModal, editForm, editSaving, openEdit, saveEdit,
   };
 }
