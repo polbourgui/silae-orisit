@@ -70,7 +70,9 @@ export function greedyScheduler(extras, creneaux, disponibilites) {
       if (assigned >= nb) break;
       if (assignedPerExtra.get(extra.id).some((c) => c.id === creneau.id)) continue;
       if (violatesRestRule(assignedPerExtra.get(extra.id), creneau)) continue;
-      const durationH = (timeToMinutes(creneau.heure_fin) - timeToMinutes(creneau.heure_debut)) / 60;
+      let durationMins = timeToMinutes(creneau.heure_fin) - timeToMinutes(creneau.heure_debut);
+      if (durationMins <= 0) durationMins += 24 * 60;
+      const durationH = durationMins / 60;
       hoursAssigned.set(extra.id, (hoursAssigned.get(extra.id) ?? 0) + durationH);
       assignedPerExtra.get(extra.id).push(creneau);
       result.push({ extra_id: extra.id, creneau_id: creneau.id });

@@ -22,7 +22,9 @@ export function useCreneaux({ currentWeek, showAlert }) {
     creneaux.value.reduce((sum, c) => {
       const [dh, dm] = c.heure_debut.split(':').map(Number);
       const [fh, fm] = c.heure_fin.split(':').map(Number);
-      return sum + ((fh * 60 + fm) - (dh * 60 + dm)) / 60;
+      let mins = (fh * 60 + fm) - (dh * 60 + dm);
+      if (mins <= 0) mins += 24 * 60;
+      return sum + (mins / 60) * (c.nb_postes ?? 1);
     }, 0).toFixed(1)
   );
 
