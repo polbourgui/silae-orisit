@@ -59,6 +59,7 @@ const staticOpts = process.env.NODE_ENV === 'production'
 app.use(express.static(join(__dirname, '..', 'public'), staticOpts));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
+app.get('/', (_req, res) => res.redirect('/manager.html'));
 
 app.use('/auth', authRouter);
 app.use('/extras', extrasRouter);
