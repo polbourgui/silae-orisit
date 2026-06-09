@@ -28,6 +28,34 @@ function violatesRestRule(assignedCreneaux, creneau) {
 }
 
 /**
+ * Vérifie si l'ajout d'un extra à un créneau crée un conflit avec ses affectations existantes.
+ * @param {object} newCreneau - Le créneau à affecter
+ * @param {object[]} assignedCreneaux - Les créneaux déjà affectés à cet extra cette semaine
+ * @returns {{ type: 'overlap'|'rest', message: string }|null}
+ */
+export function checkAffectationConflict(newCreneau, assignedCreneaux) {
+  const { start: newStart, end: newEnd } = absoluteMinutes(newCreneau.jour, newCreneau.heure_debut, newCreneau.heure_fin);
+  for (const c of assignedCreneaux) {
+    const { start: existStart, end: existEnd } = absoluteMinutes(c.jour, c.heure_debut, c.heure_fin);
+    const overlaps = newStart < existEnd && existStart < newEnd;
+    if (overlaps) {
+      return { type: 'overlap', message: `Cet extra est déjà affecté à un créneau qui chevauche cet horaire (${c.heure_debut}–${c.heure_fin} ${c.jour})` };
+    }
+    const gapAfter  = newStart - existEnd;
+    const gapBefore = existStart - newEnd;
+    const hasEnoughRest = gapAfter >= REST_MINUTES_REQUIRED || gapBefore >= REST_MINUTES_REQUIRED;
+    if (!hasEnoughRest) {
+      const gapMin = Math.max(gapAfter, gapBefore);
+      const gapH   = Math.floor(Math.abs(gapMin) / 60);
+      const gapM   = Math.abs(gapMin) % 60;
+      const gapStr = gapM ? `${gapH}h${String(gapM).padStart(2,'0')}` : `${gapH}h`;
+      return { type: 'rest', message: `Temps de repos insuffisant avec le créneau ${c.heure_debut}–${c.heure_fin} ${c.jour} (${gapStr} au lieu de 11h minimum)` };
+    }
+  }
+  return null;
+}
+
+/**
  * Greedy scheduler: assigns extras to creneaux.
  * Rules: no double booking, only available extras, 11h rest between shifts.
  * Priority: ascending nb heures already assigned.

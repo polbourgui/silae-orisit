@@ -10,7 +10,7 @@ import { findCreneauxBySemaine } from '../models/creneauxModel.js';
 import { findExtrasBySite } from '../models/extrasModel.js';
 import { getPostesByExtras } from '../models/postesModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
-import { greedyScheduler } from '../services/planningService.js';
+import { greedyScheduler, checkAffectationConflict } from '../services/planningService.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
 import { NotFoundError, ValidationError, ForbiddenError } from '../errors/index.js';
 import logger from '../logger.js';
@@ -87,10 +87,22 @@ router.put('/week/:isoWeek/affectation/:creneauId', async (req, res, next) => {
     const { extra_id } = req.body;
     if (!extra_id || !validateUUID(extra_id)) throw new ValidationError('extra_id requis et doit être un UUID valide');
 
-    const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
-    let planning  = await findPlanningBySemaine(semaine.id, req.siteId);
+    const semaine  = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
+    let planning   = await findPlanningBySemaine(semaine.id, req.siteId);
     if (!planning) planning = await createPlanning(semaine.id, req.siteId);
     if (planning.published_at) throw new ForbiddenError('Planning déjà publié');
+
+    // Récupère le créneau cible et les affectations existantes de cet extra cette semaine
+    const creneaux = await findCreneauxBySemaine(semaine.id);
+    const newCreneau = creneaux.find(c => c.id === req.params.creneauId);
+    if (!newCreneau) throw new NotFoundError('Créneau introuvable');
+
+    const allAffectations = await findAffectations(planning.id, req.siteId);
+    const extraAffectedIds = allAffectations.filter(a => a.extra_id === extra_id).map(a => a.creneau_id);
+    const extraCreneaux = creneaux.filter(c => extraAffectedIds.includes(c.id));
+
+    const conflict = checkAffectationConflict(newCreneau, extraCreneaux);
+    if (conflict) throw new ValidationError(conflict.message);
 
     const aff = await addAffectation(planning.id, req.params.creneauId, extra_id, req.siteId);
     res.json({ ok: true, data: aff });
