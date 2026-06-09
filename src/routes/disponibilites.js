@@ -16,16 +16,19 @@ const magicLinkLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders:
 
 router.get('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, res, next) => {
   try {
-    const semaine = await findOrCreateSemaine(req.extra.site_id, req.semaine);
-    const [allCreneaux, extraPostes, dispos] = await Promise.all([
-      findCreneauxBySemaine(semaine.id),
-      findPostesByExtra(req.extra.id, req.extra.site_id),
-      findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id),
-    ]);
+    const extraPostes = await findPostesByExtra(req.extra.id, req.extra.site_id);
     const extraPosteIds = new Set(extraPostes.map(p => p.id));
-    const creneaux = allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id));
-    const checked_ids = dispos.map(d => d.creneau_id);
-    res.json({ ok: true, data: { extra: req.extra, semaine, creneaux, checked_ids } });
+
+    const semainesData = [];
+    for (const isoWeek of req.semaines) {
+      const semaine = await findOrCreateSemaine(req.extra.site_id, isoWeek);
+      const allCreneaux = await findCreneauxBySemaine(semaine.id);
+      const creneaux = allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id));
+      const dispos = await findDisponibilitesExtra(req.extra.id, semaine.id, req.extra.site_id);
+      semainesData.push({ semaine, creneaux, checked_ids: dispos.map(d => d.creneau_id) });
+    }
+
+    res.json({ ok: true, data: { extra: req.extra, semaines: semainesData } });
   } catch (err) {
     next(err);
   }
@@ -38,16 +41,23 @@ router.post('/:token', magicLinkLimiter, requireMagicLink('dispo'), async (req, 
     if (!Array.isArray(creneau_ids) || creneau_ids.some((id) => !validateUUID(id))) {
       throw new ValidationError('creneau_ids doit être un tableau de UUIDs valides');
     }
-    const semaine = await findOrCreateSemaine(req.extra.site_id, req.semaine);
-    const [allCreneaux, extraPostes] = await Promise.all([
-      findCreneauxBySemaine(semaine.id),
-      findPostesByExtra(req.extra.id, req.extra.site_id),
-    ]);
+
+    const extraPostes = await findPostesByExtra(req.extra.id, req.extra.site_id);
     const extraPosteIds = new Set(extraPostes.map(p => p.id));
-    const allowedIds = new Set(allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id)).map(c => c.id));
-    const filtered_ids = creneau_ids.filter(id => allowedIds.has(id));
-    const saved = await saveDisponibilites(req.extra.id, semaine.id, req.extra.site_id, filtered_ids);
-    res.json({ ok: true, data: { count: saved.length } });
+
+    let totalSaved = 0;
+    for (const isoWeek of req.semaines) {
+      const semaine = await findOrCreateSemaine(req.extra.site_id, isoWeek);
+      const allCreneaux = await findCreneauxBySemaine(semaine.id);
+      const allowedIds = new Set(
+        allCreneaux.filter(c => !c.poste_id || extraPosteIds.has(c.poste_id)).map(c => c.id)
+      );
+      const filtered = creneau_ids.filter(id => allowedIds.has(id));
+      const saved = await saveDisponibilites(req.extra.id, semaine.id, req.extra.site_id, filtered);
+      totalSaved += saved.length;
+    }
+
+    res.json({ ok: true, data: { count: totalSaved } });
   } catch (err) {
     next(err);
   }

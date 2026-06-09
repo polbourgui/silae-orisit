@@ -25,14 +25,14 @@ export function generateManagerToken(manager) {
  * @param {{ type: string, extraId: string, siteId: string, semaine?: string, contratId?: string }} opts
  * @returns {string}
  */
-export function generateMagicLinkToken({ type, extraId, siteId, semaine, contratId, tokenVersion }) {
-  const expiresIn = type === 'contrat' ? '7d' : '48h';
+export function generateMagicLinkToken({ type, extraId, siteId, semaines, contratId, tokenVersion }) {
+  const expiresIn = type === 'contrat' ? '7d' : '90d';
   const payload = {
     type,
     extra_id: extraId,
     site_id: siteId,
     token_version: tokenVersion,
-    ...(semaine ? { semaine } : {}),
+    ...(semaines ? { semaines } : {}),
     ...(contratId ? { contrat_id: contratId } : {}),
   };
   return jwt.sign(payload, JWT_MAGIC_LINK_SECRET, { expiresIn });

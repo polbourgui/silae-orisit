@@ -59,7 +59,8 @@ export function requireMagicLink(expectedType) {
         return next(new InvalidTokenError('Token révoqué — un lien plus récent a été émis'));
       }
       req.extra = { ...extra, site_id: payload.site_id };
-      if (payload.semaine) req.semaine = payload.semaine;
+      if (payload.semaines) req.semaines = payload.semaines;
+      else if (payload.semaine) req.semaines = [payload.semaine]; // compat tokens anciens
       if (payload.contrat_id) req.contratId = payload.contrat_id;
       return next();
     } catch (err) {

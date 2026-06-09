@@ -6,8 +6,14 @@ export function useExtras({ showAlert, allPostes }) {
   const eLoading        = ref(false);
   const eLinkModal      = ref(null);
   const eLinkWeek       = ref(isoWeekFromDate(new Date()));
+  const eLinkPeriode    = ref('semaine'); // 'semaine' | 'mois'
   const eLinkWeekLabel  = computed(() => eLinkWeek.value.replace('-W', ' — Semaine '));
   const eLinkWeekBounds = computed(() => weekBoundsLabel(eLinkWeek.value));
+  const eLinkPeriodeLabel = computed(() => {
+    if (eLinkPeriode.value === 'semaine') return eLinkWeekLabel.value;
+    const fin = offsetWeek(eLinkWeek.value, 3);
+    return `${eLinkWeekLabel.value} → Semaine ${fin.split('-W')[1]}`;
+  });
   const eSending        = ref({});
 
   const eSelected       = ref(new Set());
@@ -40,8 +46,11 @@ export function useExtras({ showAlert, allPostes }) {
   async function sendDispoLink(extra) {
     eSending.value = { ...eSending.value, [extra.id]: true };
     try {
+      const body = eLinkPeriode.value === 'mois'
+        ? { semaine_debut: eLinkWeek.value, semaine_fin: offsetWeek(eLinkWeek.value, 3) }
+        : { semaine: eLinkWeek.value };
       const data = await apiFetch(`/extras/${extra.id}/send-dispo-link`, {
-        method: 'POST', body: JSON.stringify({ semaine: eLinkWeek.value }),
+        method: 'POST', body: JSON.stringify(body),
       });
       eLinkModal.value = { extra, semaine: eLinkWeek.value, url: data.url, sent: data.sent };
     } catch (err) { showAlert('error', err.message); }
@@ -112,7 +121,7 @@ export function useExtras({ showAlert, allPostes }) {
   }
 
   return {
-    eExtras, eLoading, eLinkModal, eLinkWeek, eLinkWeekLabel, eLinkWeekBounds, eSending,
+    eExtras, eLoading, eLinkModal, eLinkWeek, eLinkPeriode, eLinkPeriodeLabel, eLinkWeekLabel, eLinkWeekBounds, eSending,
     eLinkPrevWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, -1); },
     eLinkNextWeek: () => { eLinkWeek.value = offsetWeek(eLinkWeek.value, +1); },
     eSelected, eAllSelected, eToggleAll, eToggle, eSelectedExtras,

@@ -7,6 +7,7 @@ import { syncExtrasFromSilae } from '../services/silaeService.js';
 import { generateMagicLinkToken } from '../utils/jwt.js';
 import { sendDispoLink } from '../services/mailService.js';
 import { validateUUID, assertRequired } from '../utils/validators.js';
+import { buildWeekRange } from '../utils/dates.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import logger from '../logger.js';
 
@@ -63,9 +64,19 @@ router.put('/:id/blocked', async (req, res, next) => {
 router.post('/:id/send-dispo-link', async (req, res, next) => {
   try {
     if (!validateUUID(req.params.id)) throw new ValidationError('UUID invalide');
-    assertRequired(req.body, ['semaine']);
-    const { semaine } = req.body;
-    if (!/^\d{4}-W\d{2}$/.test(semaine)) throw new ValidationError('Format semaine invalide (ex: 2026-W24)');
+    const { semaine, semaine_debut, semaine_fin } = req.body;
+    const weekRe = /^\d{4}-W\d{2}$/;
+    let semaines;
+    if (semaine_debut && semaine_fin) {
+      if (!weekRe.test(semaine_debut) || !weekRe.test(semaine_fin)) throw new ValidationError('Format semaine invalide (ex: 2026-W24)');
+      semaines = buildWeekRange(semaine_debut, semaine_fin);
+      if (semaines.length === 0) throw new ValidationError('Plage de semaines invalide');
+    } else if (semaine) {
+      if (!weekRe.test(semaine)) throw new ValidationError('Format semaine invalide (ex: 2026-W24)');
+      semaines = [semaine];
+    } else {
+      throw new ValidationError('semaine ou semaine_debut + semaine_fin requis');
+    }
 
     const extra = await findExtraById(req.params.id, req.siteId);
     if (!extra) throw new NotFoundError('Extra introuvable');
@@ -75,7 +86,7 @@ router.post('/:id/send-dispo-link', async (req, res, next) => {
       type: 'dispo',
       extraId: extra.id,
       siteId: req.siteId,
-      semaine,
+      semaines,
       tokenVersion: updated.token_version,
     });
     const url = `${APP_BASE_URL}/extra.html?token=${token}`;

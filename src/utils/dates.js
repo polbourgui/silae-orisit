@@ -40,6 +40,35 @@ export function getWeekBounds(isoWeek) {
 }
 
 /**
+ * Offsets an ISO week string by n weeks.
+ * @param {string} isoWeek e.g. '2026-W24'
+ * @param {number} n
+ * @returns {string}
+ */
+export function offsetISOWeek(isoWeek, n) {
+  const { start } = getWeekBounds(isoWeek);
+  const d = new Date(start);
+  d.setUTCDate(d.getUTCDate() + n * 7);
+  return getISOWeekString(d);
+}
+
+/**
+ * Returns all ISO weeks from debut to fin inclusive (max 6).
+ * @param {string} debut e.g. '2026-W24'
+ * @param {string} fin   e.g. '2026-W27'
+ * @returns {string[]}
+ */
+export function buildWeekRange(debut, fin) {
+  const weeks = [];
+  let current = debut;
+  while (current <= fin && weeks.length < 6) {
+    weeks.push(current);
+    current = offsetISOWeek(current, 1);
+  }
+  return weeks;
+}
+
+/**
  * Deadline is Thursday 18h of the given ISO week
  * @param {string} semaine e.g. '2026-W24'
  * @returns {boolean}

@@ -181,24 +181,29 @@ function weekLabel(isoWeek) {
 const app = createApp({
   setup() {
     const token = new URLSearchParams(location.search).get('token');
-    const state  = ref('loading'); // loading | form | success | error | expired
+    const state  = ref('loading'); // loading | form | success | error | revoked
     const errMsg = ref('');
     const extra  = ref(null);
-    const semaine = ref(null);
-    const creneaux = ref([]);
+    const semaines = ref([]); // [{ semaine, creneaux, checked_ids }]
     const checked  = ref(new Set());
     const saving   = ref(false);
 
-    const groupedByDay = computed(() => {
-      const groups = {};
-      for (const c of creneaux.value) {
-        if (!groups[c.jour]) groups[c.jour] = [];
-        groups[c.jour].push(c);
-      }
-      return JOURS_ORDER.filter(j => groups[j]).map(j => ({ jour: j, label: JOURS_LABELS[j], slots: groups[j] }));
+    // Creneaux groupés par semaine puis par jour
+    const groupedBySemaine = computed(() => {
+      return semaines.value.map(({ semaine, creneaux }) => {
+        const byDay = {};
+        for (const c of creneaux) {
+          if (!byDay[c.jour]) byDay[c.jour] = [];
+          byDay[c.jour].push(c);
+        }
+        const days = JOURS_ORDER.filter(j => byDay[j]).map(j => ({ jour: j, label: JOURS_LABELS[j], slots: byDay[j] }));
+        return { semaine, days };
+      }).filter(s => s.days.length > 0);
     });
 
-    const checkedCount = computed(() => checked.value.size);
+    const totalCreneaux = computed(() => semaines.value.reduce((s, w) => s + w.creneaux.length, 0));
+    const checkedCount  = computed(() => checked.value.size);
+    const multiSemaine  = computed(() => semaines.value.length > 1);
 
     async function load() {
       if (!token) { state.value = 'error'; errMsg.value = 'Lien invalide.'; return; }
@@ -207,15 +212,16 @@ const app = createApp({
         const data = await res.json();
         if (!data.ok) {
           const msg = data.error?.toLowerCase() ?? '';
-          state.value = msg.includes('expiré') || msg.includes('révoqué') ? 'expired' : 'error';
+          state.value = msg.includes('révoqué') ? 'revoked' : 'error';
           errMsg.value = data.error ?? 'Erreur inconnue';
           return;
         }
         extra.value   = data.data.extra;
-        semaine.value = data.data.semaine;
-        creneaux.value = data.data.creneaux;
-        checked.value  = new Set(data.data.checked_ids);
-        state.value = creneaux.value.length === 0 ? 'no-creneaux' : 'form';
+        semaines.value = data.data.semaines;
+        const allChecked = new Set();
+        for (const { checked_ids } of data.data.semaines) checked_ids.forEach(id => allChecked.add(id));
+        checked.value = allChecked;
+        state.value = totalCreneaux.value === 0 ? 'no-creneaux' : 'form';
       } catch {
         state.value = 'error';
         errMsg.value = 'Impossible de charger le formulaire.';
@@ -249,7 +255,7 @@ const app = createApp({
 
     onMounted(load);
 
-    return { state, errMsg, extra, semaine, groupedByDay, checked, checkedCount, saving, toggle, submit, weekLabel, formatTime };
+    return { state, errMsg, extra, semaines, groupedBySemaine, totalCreneaux, checked, checkedCount, multiSemaine, saving, toggle, submit, weekLabel, formatTime };
   },
 
   template: `
@@ -268,11 +274,11 @@ const app = createApp({
     <div class="state-sub">{{ errMsg }}</div>
   </div>
 
-  <!-- Expired -->
-  <div v-else-if="state === 'expired'" class="state-screen">
-    <div class="state-icon">⏰</div>
-    <div class="state-title">Lien expiré</div>
-    <div class="state-sub">Ce lien n'est plus valable. Contactez votre responsable pour en recevoir un nouveau.</div>
+  <!-- Révoqué -->
+  <div v-else-if="state === 'revoked'" class="state-screen">
+    <div class="state-icon">🔄</div>
+    <div class="state-title">Lien remplacé</div>
+    <div class="state-sub">Un nouveau lien vous a été envoyé. Utilisez le lien le plus récent reçu par email.</div>
   </div>
 
   <!-- No creneaux -->
@@ -287,6 +293,9 @@ const app = createApp({
     <div class="state-icon">✅</div>
     <div class="state-title">Disponibilités enregistrées !</div>
     <div class="state-sub">Merci {{ extra?.prenom }}. Vos disponibilités ont bien été prises en compte.</div>
+    <button @click="state = 'form'" style="margin-top:20px;background:#1e40af;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:15px;font-weight:600;cursor:pointer">
+      Modifier mes disponibilités
+    </button>
   </div>
 
   <!-- Form -->
@@ -294,7 +303,8 @@ const app = createApp({
     <div class="header">
       <h1>Vos disponibilités</h1>
       <p v-if="extra">Bonjour {{ extra.prenom }} {{ extra.nom }}</p>
-      <span class="week-badge">{{ weekLabel(semaine?.iso_week) }}</span>
+      <span v-if="!multiSemaine" class="week-badge">{{ weekLabel(semaines[0]?.semaine?.iso_week) }}</span>
+      <span v-else class="week-badge">{{ semaines.length }} semaines</span>
     </div>
 
     <div class="content" style="padding-bottom: 100px">
@@ -302,22 +312,28 @@ const app = createApp({
         Cochez les créneaux pour lesquels vous êtes disponible.
       </p>
 
-      <div class="day-block" v-for="group in groupedByDay" :key="group.jour">
-        <div class="day-label">{{ group.label }}</div>
-        <div
-          v-for="slot in group.slots"
-          :key="slot.id"
-          class="slot-card"
-          :class="{ checked: checked.has(slot.id) }"
-          @click="toggle(slot.id)"
-        >
-          <div class="check-icon"></div>
-          <div class="slot-info">
-            <div class="slot-time">{{ formatTime(slot.heure_debut) }} – {{ formatTime(slot.heure_fin) }}</div>
-            <div class="slot-label">{{ slot.slot_label }}</div>
+      <template v-for="semaineGroup in groupedBySemaine" :key="semaineGroup.semaine.iso_week">
+        <div v-if="multiSemaine"
+          style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1e40af;background:#eff6ff;border-radius:8px;padding:6px 12px;margin-bottom:10px;margin-top:16px">
+          {{ weekLabel(semaineGroup.semaine.iso_week) }}
+        </div>
+        <div class="day-block" v-for="group in semaineGroup.days" :key="semaineGroup.semaine.iso_week + group.jour">
+          <div class="day-label">{{ group.label }}</div>
+          <div
+            v-for="slot in group.slots"
+            :key="slot.id"
+            class="slot-card"
+            :class="{ checked: checked.has(slot.id) }"
+            @click="toggle(slot.id)"
+          >
+            <div class="check-icon"></div>
+            <div class="slot-info">
+              <div class="slot-time">{{ formatTime(slot.heure_debut) }} – {{ formatTime(slot.heure_fin) }}</div>
+              <div class="slot-label">{{ slot.slot_label }}</div>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
 
     <div class="footer">

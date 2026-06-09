@@ -10,16 +10,28 @@ export const TEMPLATE_EXTRAS = `
     </button>
   </div>
 
-  <div class="week-nav" style="margin-bottom:20px">
+  <div class="week-nav" style="margin-bottom:12px">
     <button @click="eLinkPrevWeek">‹</button>
     <div>
-      <div class="week-label">{{ eLinkWeekLabel }}</div>
+      <div class="week-label">{{ eLinkPeriodeLabel }}</div>
       <div class="week-bounds">{{ eLinkWeekBounds }}</div>
     </div>
     <button @click="eLinkNextWeek">›</button>
     <div class="spacer"></div>
-    <span style="font-size:12px;color:#94a3b8">Les liens générés seront valables 48h</span>
+    <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:8px;padding:3px">
+      <button @click="eLinkPeriode = 'semaine'"
+        :style="eLinkPeriode === 'semaine' ? 'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#1e40af;font-weight:600' : 'color:#64748b'"
+        style="border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">
+        Semaine
+      </button>
+      <button @click="eLinkPeriode = 'mois'"
+        :style="eLinkPeriode === 'mois' ? 'background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);color:#1e40af;font-weight:600' : 'color:#64748b'"
+        style="border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">
+        Mois (4 sem.)
+      </button>
+    </div>
   </div>
+  <p style="font-size:12px;color:#94a3b8;margin-bottom:16px">Les liens restent valables jusqu'à la publication du planning — l'extra peut modifier ses disponibilités à tout moment.</p>
 
   <div v-if="eSelected.size > 0" style="display:flex;align-items:center;gap:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 16px;margin-bottom:14px">
     <span style="font-size:13px;font-weight:600;color:#0369a1">{{ eSelected.size }} extra(s) sélectionné(s)</span>
