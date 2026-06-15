@@ -354,3 +354,77 @@ tr:hover td { background: #f8fafc; }
 }
 .planning-stats .stat-item { display: flex; align-items: center; gap: 6px; color: #64748b; }
 .planning-stats .stat-item strong { color: #1e293b; }
+
+/* ── Onglets vue liste / tableau ── */
+.view-tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0 18px;
+}
+.view-tab {
+  padding: 8px 16px; font-size: 12px; font-weight: 500; cursor: pointer;
+  border: none; background: none; color: #64748b;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color .12s, border-color .12s;
+}
+.view-tab:hover { color: #1e293b; }
+.view-tab-active { color: #1e40af; border-bottom-color: #1e40af; }
+
+/* ── Vue tableau planning ── */
+.ptab-container { overflow-x: auto; }
+
+.ptab-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  table-layout: auto;
+}
+
+.ptab-th-label {
+  text-align: left; padding: 9px 14px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #64748b;
+  background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap; min-width: 130px;
+  position: sticky; left: 0; z-index: 2;
+}
+.ptab-th-day {
+  text-align: center; padding: 9px 12px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: #64748b;
+  background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0; white-space: nowrap; min-width: 160px;
+}
+
+.ptab-tr-first td { border-top: 1px solid #e2e8f0; }
+.ptab-tr-sub td { border-top: 1px solid #f1f5f9; }
+.ptab-tr-first:first-child td { border-top: none; }
+
+.ptab-td-label {
+  padding: 10px 14px; vertical-align: top;
+  background: #fafafa; border-right: 2px solid #e2e8f0;
+  position: sticky; left: 0; z-index: 1;
+}
+.ptab-time {
+  font-variant-numeric: tabular-nums; font-size: 12px;
+  font-weight: 700; color: #334155; white-space: nowrap;
+}
+.ptab-slot-label { font-size: 12px; color: #64748b; margin-top: 2px; }
+.ptab-nb-postes {
+  display: inline-block; margin-top: 4px;
+  font-size: 10px; color: #94a3b8; background: #f1f5f9;
+  border-radius: 10px; padding: 1px 6px;
+}
+
+.ptab-td-slot {
+  padding: 6px 10px; vertical-align: middle;
+  border-left: 1px solid #f1f5f9;
+}
+.ptab-td-na { background: #fafafa; }
+.ptab-na-dash { color: #cbd5e1; font-size: 13px; display: block; text-align: center; }
+
+.ptab-assignee { min-width: 130px; }
+
+.ptab-tr-first:hover .ptab-td-slot,
+.ptab-tr-sub:hover .ptab-td-slot { background: #f8fafc; }
+.ptab-tr-first:hover .ptab-td-label,
+.ptab-tr-sub:hover .ptab-td-label { background: #f1f5f9; }
