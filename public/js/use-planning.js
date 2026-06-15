@@ -2,13 +2,14 @@ import { ref, computed, watch } from '/vendor/vue.esm-browser.js';
 import { apiFetch } from './manager-utils.js';
 
 export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
-  const pPlanning     = ref(null);
-  const pAffectations = ref([]);
-  const pExtras       = ref([]);
-  const pCreneaux     = ref([]);
-  const pLoading      = ref(false);
-  const pSaving       = ref(false);
-  const pSearchState  = ref({});
+  const pPlanning          = ref(null);
+  const pAffectations      = ref([]);
+  const pExtras            = ref([]);
+  const pCreneaux          = ref([]);
+  const pLoading           = ref(false);
+  const pSaving            = ref(false);
+  const pSearchState       = ref({});
+  const planningDisplayMode = ref('liste');
 
   const pIsPublished = computed(() => !!pPlanning.value?.published_at);
   const pNbPourvus   = computed(() => pAffectations.value.length);
@@ -188,12 +189,54 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     };
   }
 
+  const JOURS_ORDER = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+
+  const pTableauData = computed(() => {
+    const daysSet = new Set(pCreneaux.value.map(c => c.jour));
+    const days = JOURS_ORDER.filter(j => daysSet.has(j));
+
+    const rowMap = new Map();
+    for (const c of pCreneaux.value) {
+      const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}`;
+      if (!rowMap.has(key)) {
+        rowMap.set(key, {
+          key,
+          heure_debut: c.heure_debut,
+          heure_fin:   c.heure_fin,
+          slot_label:  c.slot_label,
+          cells:       {},
+          maxNb:       0,
+        });
+      }
+      const row = rowMap.get(key);
+      const nb  = c.nb_postes ?? 1;
+      if (nb > row.maxNb) row.maxNb = nb;
+      const affs  = pAffectations.value.filter(a => a.creneau_id === c.id);
+      const poste = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
+      const slots = [];
+      for (let i = 0; i < nb; i++) {
+        const aff   = affs[i] ?? null;
+        const extra = aff ? pExtras.value.find(e => e.id === aff.extra_id) : null;
+        slots.push({ slotKey: `${c.id}::${i}`, slotIndex: i, aff, extra });
+      }
+      row.cells[c.jour] = { creneau: c, nb, poste, slots };
+    }
+
+    const rows = [...rowMap.values()].sort((a, b) => {
+      if (a.heure_debut !== b.heure_debut) return a.heure_debut < b.heure_debut ? -1 : 1;
+      return a.heure_fin < b.heure_fin ? -1 : 1;
+    });
+
+    return { days, rows };
+  });
+
   watch(currentWeek, () => { if (activeView.value === 'planning') loadPlanning(); });
 
   return {
     pPlanning, pIsPublished, pLoading, pSaving,
     pCreneaux, pExtras, pAffectations,
-    pTableRows, pNbPourvus, pNbTotal, pSearchState,
+    pTableRows, pTableauData, pNbPourvus, pNbTotal, pSearchState,
+    planningDisplayMode,
     loadPlanning, proposeAlgo, publishPlanning,
     filteredExtras, openSearch, closeSearch, selectExtra, clearExtra, dropStyle,
   };
