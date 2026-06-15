@@ -24,7 +24,19 @@ export async function applyIncrementalMigrations() {
       UNIQUE (site_id, label)
     )
   `);
-  await pool.query(`ALTER TABLE extras ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT FALSE`);
+  // is_blocked a été migré vers site_extras (migration 005) — on n'y touche plus sur extras
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS site_extras (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      site_id         UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+      extra_id        UUID NOT NULL REFERENCES extras(id) ON DELETE CASCADE,
+      matricule_silae VARCHAR(100) NOT NULL,
+      is_blocked      BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (site_id, extra_id),
+      UNIQUE (site_id, matricule_silae)
+    )
+  `);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS nb_postes INTEGER NOT NULL DEFAULT 1`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS notes TEXT`);
 

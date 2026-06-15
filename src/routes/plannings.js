@@ -8,7 +8,7 @@ import {
   clearAffectations, createAffectationsBatch,
 } from '../models/planningsModel.js';
 import { findCreneauxBySemaine } from '../models/creneauxModel.js';
-import { findExtrasBySite } from '../models/extrasModel.js';
+import { findExtrasBySite, findExtraAssignmentsAllSites } from '../models/extrasModel.js';
 import { getPostesByExtras } from '../models/postesModel.js';
 import { findDisponibilites } from '../models/disponibilitesModel.js';
 import { greedyScheduler, checkAffectationConflict } from '../services/planningService.js';
@@ -99,11 +99,19 @@ router.put('/week/:isoWeek/affectation/:creneauId', async (req, res, next) => {
     const newCreneau = creneaux.find(c => c.id === req.params.creneauId);
     if (!newCreneau) throw new NotFoundError('Créneau introuvable');
 
+    // Créneaux déjà affectés à cet extra sur CE site pour cette semaine
     const allAffectations = await findAffectations(planning.id, req.siteId);
-    const extraAffectedIds = allAffectations.filter(a => a.extra_id === extra_id).map(a => a.creneau_id);
-    const extraCreneaux = creneaux.filter(c => extraAffectedIds.includes(c.id));
+    const extraLocalIds = allAffectations.filter(a => a.extra_id === extra_id).map(a => a.creneau_id);
+    const extraLocalCreneaux = creneaux.filter(c => extraLocalIds.includes(c.id));
 
-    const conflict = checkAffectationConflict(newCreneau, extraCreneaux);
+    // Créneaux affectés sur les AUTRES sites (même semaine) — détection cross-site
+    const crossSiteCreneaux = await findExtraAssignmentsAllSites(extra_id, req.params.isoWeek);
+    const allExtraCreneaux = [
+      ...extraLocalCreneaux,
+      ...crossSiteCreneaux.filter(c => !extraLocalIds.includes(c.id)),
+    ];
+
+    const conflict = checkAffectationConflict(newCreneau, allExtraCreneaux);
     if (conflict) throw new ValidationError(conflict.message);
 
     const aff = await addAffectation(planning.id, req.params.creneauId, extra_id, req.siteId);
