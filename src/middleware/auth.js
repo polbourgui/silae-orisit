@@ -61,10 +61,12 @@ export function requireMagicLink(expectedType) {
       return next(new ForbiddenError(`Type de token invalide : attendu ${expectedType}`));
     }
     try {
-      const { rows } = await pool.query(
-        'SELECT id, token_version, nom, prenom, email FROM extras WHERE id = $1 AND site_id = $2',
-        [payload.extra_id, payload.site_id]
-      );
+      const { rows } = await pool.query(`
+        SELECT e.id, e.token_version, e.nom, e.prenom, e.email
+        FROM extras e
+        JOIN site_extras se ON se.extra_id = e.id AND se.site_id = $2
+        WHERE e.id = $1
+      `, [payload.extra_id, payload.site_id]);
       if (rows.length === 0) {
         return next(new InvalidTokenError('Extra introuvable'));
       }

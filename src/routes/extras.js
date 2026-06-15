@@ -52,7 +52,8 @@ router.put('/:id/blocked', async (req, res, next) => {
     const { blocked } = req.body;
     if (typeof blocked !== 'boolean') throw new ValidationError('blocked doit être un booléen');
     const { rows } = await pool.query(
-      `UPDATE extras SET is_blocked = $1 WHERE id = $2 AND site_id = $3 RETURNING id, is_blocked`,
+      `UPDATE site_extras SET is_blocked = $1 WHERE extra_id = $2 AND site_id = $3
+       RETURNING extra_id AS id, is_blocked`,
       [blocked, req.params.id, req.siteId]
     );
     if (!rows[0]) throw new NotFoundError('Extra introuvable');

@@ -106,38 +106,87 @@ for (const libelle of postesData) {
 console.log(`✓ ${postes.length} postes`);
 
 // ── Extras ───────────────────────────────────────────────────────────────────
+// 50 extras avec noms français réalistes et compétences variées
+// postesData : 0=Chef de rang, 1=Barman, 2=Runner, 3=Responsable, 4=Vestiaire, 5=Billetterie
 const extrasData = [
-  { matricule: 'M001', nom: 'Dupont',  prenom: 'Marc',   email: 'marc@test.fr' },
-  { matricule: 'M002', nom: 'Martin',  prenom: 'Laura',  email: 'laura@test.fr' },
-  { matricule: 'M003', nom: 'Petit',   prenom: 'Sophie', email: 'sophie@test.fr' },
-  { matricule: 'M004', nom: 'Leroy',   prenom: 'Romain', email: 'romain@test.fr' },
-  { matricule: 'M005', nom: 'Bernard', prenom: 'Chloé',  email: 'chloe@test.fr' },
+  { matricule: 'M001', nom: 'Dupont',       prenom: 'Marc',      email: 'marc.dupont@test.fr',      postes: [0, 2] },
+  { matricule: 'M002', nom: 'Martin',       prenom: 'Laura',     email: 'laura.martin@test.fr',     postes: [1, 2] },
+  { matricule: 'M003', nom: 'Petit',        prenom: 'Sophie',    email: 'sophie.petit@test.fr',     postes: [0, 3] },
+  { matricule: 'M004', nom: 'Leroy',        prenom: 'Romain',    email: 'romain.leroy@test.fr',     postes: [4] },
+  { matricule: 'M005', nom: 'Bernard',      prenom: 'Chloé',     email: 'chloe.bernard@test.fr',    postes: [5, 1] },
+  { matricule: 'M006', nom: 'Moreau',       prenom: 'Antoine',   email: 'antoine.moreau@test.fr',   postes: [0, 2] },
+  { matricule: 'M007', nom: 'Simon',        prenom: 'Camille',   email: 'camille.simon@test.fr',    postes: [1] },
+  { matricule: 'M008', nom: 'Laurent',      prenom: 'Thomas',    email: 'thomas.laurent@test.fr',   postes: [2, 3] },
+  { matricule: 'M009', nom: 'Lefebvre',     prenom: 'Anaïs',     email: 'anais.lefebvre@test.fr',   postes: [4, 5] },
+  { matricule: 'M010', nom: 'Michel',       prenom: 'Julien',    email: 'julien.michel@test.fr',    postes: [0] },
+  { matricule: 'M011', nom: 'Garcia',       prenom: 'Léa',       email: 'lea.garcia@test.fr',       postes: [1, 2] },
+  { matricule: 'M012', nom: 'David',        prenom: 'Nicolas',   email: 'nicolas.david@test.fr',    postes: [2] },
+  { matricule: 'M013', nom: 'Bertrand',     prenom: 'Emma',      email: 'emma.bertrand@test.fr',    postes: [0, 1] },
+  { matricule: 'M014', nom: 'Robert',       prenom: 'Hugo',      email: 'hugo.robert@test.fr',      postes: [3, 0] },
+  { matricule: 'M015', nom: 'Richard',      prenom: 'Manon',     email: 'manon.richard@test.fr',    postes: [5] },
+  { matricule: 'M016', nom: 'Durand',       prenom: 'Alexis',    email: 'alexis.durand@test.fr',    postes: [1, 4] },
+  { matricule: 'M017', nom: 'Roux',         prenom: 'Inès',      email: 'ines.roux@test.fr',        postes: [2, 5] },
+  { matricule: 'M018', nom: 'Vincent',      prenom: 'Mathieu',   email: 'mathieu.vincent@test.fr',  postes: [0] },
+  { matricule: 'M019', nom: 'Fournier',     prenom: 'Lucie',     email: 'lucie.fournier@test.fr',   postes: [1, 3] },
+  { matricule: 'M020', nom: 'Morin',        prenom: 'Baptiste',  email: 'baptiste.morin@test.fr',   postes: [4] },
+  { matricule: 'M021', nom: 'Girard',       prenom: 'Clara',     email: 'clara.girard@test.fr',     postes: [0, 2] },
+  { matricule: 'M022', nom: 'André',        prenom: 'Rémi',      email: 'remi.andre@test.fr',       postes: [1] },
+  { matricule: 'M023', nom: 'Lefèvre',      prenom: 'Julie',     email: 'julie.lefevre@test.fr',    postes: [5, 0] },
+  { matricule: 'M024', nom: 'Mercier',      prenom: 'Kévin',     email: 'kevin.mercier@test.fr',    postes: [2, 3] },
+  { matricule: 'M025', nom: 'Dupuis',       prenom: 'Pauline',   email: 'pauline.dupuis@test.fr',   postes: [4, 1] },
+  { matricule: 'M026', nom: 'Fontaine',     prenom: 'Arthur',    email: 'arthur.fontaine@test.fr',  postes: [0] },
+  { matricule: 'M027', nom: 'Chevalier',    prenom: 'Margot',    email: 'margot.chevalier@test.fr', postes: [1, 2] },
+  { matricule: 'M028', nom: 'Robin',        prenom: 'Théo',      email: 'theo.robin@test.fr',       postes: [3] },
+  { matricule: 'M029', nom: 'Muller',       prenom: 'Alice',     email: 'alice.muller@test.fr',     postes: [0, 5] },
+  { matricule: 'M030', nom: 'Lecomte',      prenom: 'Maxime',    email: 'maxime.lecomte@test.fr',   postes: [2] },
+  { matricule: 'M031', nom: 'Perrin',       prenom: 'Jade',      email: 'jade.perrin@test.fr',      postes: [1, 4] },
+  { matricule: 'M032', nom: 'Renard',       prenom: 'Clément',   email: 'clement.renard@test.fr',   postes: [0, 2] },
+  { matricule: 'M033', nom: 'Gilles',       prenom: 'Élodie',    email: 'elodie.gilles@test.fr',    postes: [5] },
+  { matricule: 'M034', nom: 'Rousseau',     prenom: 'Florian',   email: 'florian.rousseau@test.fr', postes: [1, 3] },
+  { matricule: 'M035', nom: 'Blanc',        prenom: 'Océane',    email: 'oceane.blanc@test.fr',     postes: [4, 0] },
+  { matricule: 'M036', nom: 'Guérin',       prenom: 'Samuel',    email: 'samuel.guerin@test.fr',    postes: [2] },
+  { matricule: 'M037', nom: 'Boyer',        prenom: 'Laëtitia',  email: 'laetitia.boyer@test.fr',   postes: [0, 1] },
+  { matricule: 'M038', nom: 'Gauthier',     prenom: 'Sébastien', email: 'sebastien.gauthier@test.fr', postes: [3, 2] },
+  { matricule: 'M039', nom: 'Rey',          prenom: 'Noémie',    email: 'noemie.rey@test.fr',       postes: [1] },
+  { matricule: 'M040', nom: 'Henry',        prenom: 'Adrien',    email: 'adrien.henry@test.fr',     postes: [5, 4] },
+  { matricule: 'M041', nom: 'Perrot',       prenom: 'Valentine', email: 'valentine.perrot@test.fr', postes: [0] },
+  { matricule: 'M042', nom: 'Leclerc',      prenom: 'Guillaume', email: 'guillaume.leclerc@test.fr', postes: [1, 2] },
+  { matricule: 'M043', nom: 'Aubert',       prenom: 'Amandine',  email: 'amandine.aubert@test.fr',  postes: [3, 0] },
+  { matricule: 'M044', nom: 'Carpentier',   prenom: 'Luca',      email: 'luca.carpentier@test.fr',  postes: [2] },
+  { matricule: 'M045', nom: 'Collet',       prenom: 'Mathilde',  email: 'mathilde.collet@test.fr',  postes: [4, 5] },
+  { matricule: 'M046', nom: 'Fernandez',    prenom: 'Dylan',     email: 'dylan.fernandez@test.fr',  postes: [1, 3] },
+  { matricule: 'M047', nom: 'Dufour',       prenom: 'Estelle',   email: 'estelle.dufour@test.fr',   postes: [0, 2] },
+  { matricule: 'M048', nom: 'Jacquet',      prenom: 'Tristan',   email: 'tristan.jacquet@test.fr',  postes: [5] },
+  { matricule: 'M049', nom: 'Breton',       prenom: 'Audrey',    email: 'audrey.breton@test.fr',    postes: [1, 4] },
+  { matricule: 'M050', nom: 'Marchand',     prenom: 'Corentin',  email: 'corentin.marchand@test.fr', postes: [0, 3] },
 ];
 const extras = [];
 for (const e of extrasData) {
-  const { rows } = await pool.query(`
-    INSERT INTO extras (site_id, matricule_silae, nom, prenom, email)
-    VALUES ($1, $2, $3, $4, $5)
-    ON CONFLICT (site_id, matricule_silae) DO UPDATE SET nom=EXCLUDED.nom, prenom=EXCLUDED.prenom, email=EXCLUDED.email
+  // Upsert entité globale (dédup par email)
+  const { rows: extRows } = await pool.query(`
+    INSERT INTO extras (nom, prenom, email)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (email) WHERE email IS NOT NULL
+    DO UPDATE SET nom=EXCLUDED.nom, prenom=EXCLUDED.prenom
     RETURNING id, nom, prenom
-  `, [SITE_ID, e.matricule, e.nom, e.prenom, e.email]);
-  extras.push(rows[0]);
+  `, [e.nom, e.prenom, e.email]);
+  const extra = extRows[0];
+  // Liaison site avec matricule Silae propre à ce dossier
+  await pool.query(`
+    INSERT INTO site_extras (site_id, extra_id, matricule_silae)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (site_id, extra_id) DO UPDATE SET matricule_silae = EXCLUDED.matricule_silae
+  `, [SITE_ID, extra.id, e.matricule]);
+  extras.push({ ...extra, postesIdx: e.postes });
 }
 console.log(`✓ ${extras.length} extras`);
 
-// Associer des postes aux extras (indices dans postesData)
-const extraPostes = [
-  [0, 2],       // Marc : Chef de rang, Runner
-  [1, 2],       // Laura : Barman, Runner
-  [0, 3],       // Sophie : Chef de rang, Responsable
-  [4],          // Romain : Vestiaire
-  [5, 1],       // Chloé : Billetterie, Barman
-];
-for (let i = 0; i < extras.length; i++) {
-  const ids = (extraPostes[i] ?? []).map(pi => postes[pi]?.id).filter(Boolean);
-  await pool.query('DELETE FROM extras_postes WHERE extra_id = $1 AND site_id = $2', [extras[i].id, SITE_ID]);
+// Associer les postes aux extras
+for (const extra of extras) {
+  const ids = extra.postesIdx.map(pi => postes[pi]?.id).filter(Boolean);
+  await pool.query('DELETE FROM extras_postes WHERE extra_id = $1 AND site_id = $2', [extra.id, SITE_ID]);
   for (const pid of ids) {
-    await pool.query('INSERT INTO extras_postes (extra_id, poste_id, site_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [extras[i].id, pid, SITE_ID]);
+    await pool.query('INSERT INTO extras_postes (extra_id, poste_id, site_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [extra.id, pid, SITE_ID]);
   }
 }
 console.log('✓ compétences extras associées');
@@ -182,16 +231,23 @@ console.log(`✓ ${creneaux.length} créneaux`);
 // Patterns variés par extra (~60-75% de disponibilité)
 await pool.query('DELETE FROM disponibilites WHERE semaine_id = $1 AND site_id = $2', [semaineId, SITE_ID]);
 
+// Patterns variés : 60–80 % de dispo, ~20 % sans réponse (ni dispo ni pas dispo)
+// Un extra sur 6 n'a pas répondu du tout (dispo_creneau_ids vide)
 const patterns = [
   (i) => i % 3 !== 0,
   (i) => i % 2 === 0,
   (i) => i < Math.ceil(creneaux.length * 0.75),
   (i) => i % 3 !== 1,
   (i) => i % 2 !== 0,
+  (i) => [0, 2, 4, 6, 8, 10].includes(i),
+  (i) => i < Math.ceil(creneaux.length * 0.5),
+  (i) => i % 4 !== 2,
 ];
 let totalDispos = 0;
 for (let ei = 0; ei < extras.length; ei++) {
   const extra = extras[ei];
+  // 1 extra sur 6 = pas répondu
+  if (ei % 6 === 5) continue;
   const myCreneaux = creneaux.filter((_, i) => patterns[ei % patterns.length](i));
   for (const c of myCreneaux) {
     await pool.query(`
@@ -199,11 +255,9 @@ for (let ei = 0; ei < extras.length; ei++) {
       VALUES ($1, $2, $3, $4) ON CONFLICT (extra_id, creneau_id) DO NOTHING
     `, [extra.id, semaineId, SITE_ID, c.id]);
   }
-  const labels = myCreneaux.map(c => `${c.jour} ${c.heure_debut.slice(0,5)}`).join(', ');
-  console.log(`  ${extra.prenom} ${extra.nom} → ${myCreneaux.length} dispos : ${labels}`);
   totalDispos += myCreneaux.length;
 }
-console.log(`✓ ${totalDispos} disponibilités`);
+console.log(`✓ ${totalDispos} disponibilités (${extras.length - Math.floor(extras.length / 6)} extras ont répondu, ${Math.floor(extras.length / 6)} sans réponse)`);
 
 console.log(`
 ✅ Seed terminé !
