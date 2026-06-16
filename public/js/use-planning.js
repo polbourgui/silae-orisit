@@ -212,7 +212,6 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
       }
       const row = rowMap.get(key);
       const nb  = c.nb_postes ?? 1;
-      if (nb > row.maxNb) row.maxNb = nb;
       const affs  = pAffectations.value.filter(a => a.creneau_id === c.id);
       const poste = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
       const slots = [];
@@ -221,7 +220,14 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
         const extra = aff ? pExtras.value.find(e => e.id === aff.extra_id) : null;
         slots.push({ slotKey: `${c.id}::${i}`, slotIndex: i, aff, extra });
       }
-      row.cells[c.jour] = { creneau: c, nb, poste, slots };
+      if (!row.cells[c.jour]) {
+        row.cells[c.jour] = { creneau: c, nb, poste, slots };
+      } else {
+        // Multiple créneaux on same day share this key — accumulate slots
+        row.cells[c.jour].slots.push(...slots);
+        row.cells[c.jour].nb += nb;
+      }
+      if (row.cells[c.jour].nb > row.maxNb) row.maxNb = row.cells[c.jour].nb;
     }
 
     const rows = [...rowMap.values()].sort((a, b) => {
