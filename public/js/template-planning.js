@@ -207,6 +207,9 @@ export const TEMPLATE_PLANNING = `
                   <!-- v-for sur un tableau d'un élément = variable locale "slot" -->
                   <template v-for="slot in [row.cells[day]?.slots?.[si - 1]]" :key="slot ? slot.slotKey : 'empty'">
                     <template v-if="slot">
+                      <div v-if="row.maxNb > 1" style="font-size:10px;color:#94a3b8;margin-bottom:3px;font-weight:500">
+                        poste {{ si }}/{{ row.cells[day].nb }}
+                      </div>
                       <div :style="{ position: 'relative', zIndex: pSearchState[slot.slotKey]?.open ? 50 : 'auto' }">
                         <div :class="['assignee-field', 'ptab-assignee',
                           slot.extra ? 'is-filled' : '',
