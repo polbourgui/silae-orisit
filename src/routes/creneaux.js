@@ -10,6 +10,7 @@ import {
   deleteCreneau,
   JOURS,
 } from '../models/creneauxModel.js';
+import { findPointsDeVenteBySite } from '../models/pointsDeVenteModel.js';
 import { validateUUID, assertRequired, assertISOWeek } from '../utils/validators.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import pool from '../models/db.js';
@@ -44,7 +45,8 @@ router.get('/semaine/:isoWeek', async (req, res, next) => {
       [req.siteId]
     );
     const creneaux = await findCreneauxBySemaine(semaine.id, req.siteId);
-    res.json({ ok: true, data: { semaine, creneaux, postes: postes.rows } });
+    const pointsDeVente = await findPointsDeVenteBySite(req.siteId);
+    res.json({ ok: true, data: { semaine, creneaux, postes: postes.rows, pointsDeVente } });
   } catch (err) {
     next(err);
   }
@@ -66,6 +68,7 @@ router.post('/semaine/:isoWeek', async (req, res, next) => {
       heureFin: req.body.heure_fin,
       posteId: req.body.poste_id ?? null,
       nbPostes,
+      pointDeVenteId: req.body.point_de_vente_id ?? null,
     });
     res.status(201).json({ ok: true, data: creneau });
   } catch (err) {
@@ -103,12 +106,13 @@ router.patch('/semaine/:isoWeek/:creneauId', async (req, res, next) => {
     if (!Number.isInteger(nbPostes) || nbPostes < 1 || nbPostes > 20) throw new ValidationError('nb_postes doit être un entier entre 1 et 20');
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
     const updated = await updateCreneau(req.params.creneauId, semaine.id, {
-      slotLabel:  req.body.slot_label.trim(),
-      heureDebut: req.body.heure_debut,
-      heureFin:   req.body.heure_fin,
-      posteId:    req.body.poste_id ?? null,
+      slotLabel:       req.body.slot_label.trim(),
+      heureDebut:      req.body.heure_debut,
+      heureFin:        req.body.heure_fin,
+      posteId:         req.body.poste_id ?? null,
       nbPostes,
-      notes:      req.body.notes?.trim() || null,
+      notes:           req.body.notes?.trim() || null,
+      pointDeVenteId:  req.body.point_de_vente_id ?? null,
     });
     if (!updated) throw new NotFoundError('Créneau introuvable');
     res.json({ ok: true, data: updated });

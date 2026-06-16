@@ -105,6 +105,32 @@ for (const libelle of postesData) {
 }
 console.log(`✓ ${postes.length} postes`);
 
+// ── Points de vente ──────────────────────────────────────────────────────────
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS points_de_vente (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    site_id UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+    nom VARCHAR(100) NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (site_id, nom)
+  )
+`).catch(() => {});
+await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS point_de_vente_id UUID REFERENCES points_de_vente(id) ON DELETE SET NULL`).catch(() => {});
+
+const pdvData = ['Bar', 'Salle principale', 'Terrasse'];
+const pdvs = [];
+for (let i = 0; i < pdvData.length; i++) {
+  const { rows } = await pool.query(`
+    INSERT INTO points_de_vente (site_id, nom, sort_order)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (site_id, nom) DO UPDATE SET sort_order = EXCLUDED.sort_order
+    RETURNING id, nom
+  `, [SITE_ID, pdvData[i], i]);
+  pdvs.push(rows[0]);
+}
+console.log(`✓ ${pdvs.length} points de vente`);
+
 // ── Extras ───────────────────────────────────────────────────────────────────
 // Nettoyer les liaisons site ↔ extra pour ce site avant de les recréer (idempotence)
 await pool.query('DELETE FROM site_extras WHERE site_id = $1', [SITE_ID]);

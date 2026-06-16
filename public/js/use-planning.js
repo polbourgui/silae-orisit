@@ -197,15 +197,17 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
 
     const rowMap = new Map();
     for (const c of pCreneaux.value) {
-      const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}`;
+      const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}|${c.point_de_vente_id ?? ''}`;
       if (!rowMap.has(key)) {
         rowMap.set(key, {
           key,
-          heure_debut: c.heure_debut,
-          heure_fin:   c.heure_fin,
-          slot_label:  c.slot_label,
-          cells:       {},
-          maxNb:       0,
+          heure_debut:      c.heure_debut,
+          heure_fin:        c.heure_fin,
+          slot_label:       c.slot_label,
+          pdv_nom:          c.pdv_nom ?? null,
+          point_de_vente_id: c.point_de_vente_id ?? null,
+          cells:            {},
+          maxNb:            0,
         });
       }
       const row = rowMap.get(key);

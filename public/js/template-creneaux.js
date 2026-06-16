@@ -45,18 +45,25 @@ export const TEMPLATE_CRENEAUX = `
       </div>
       <table v-else>
         <thead><tr>
-          <th>Jour</th><th>Libellé</th><th>Horaires</th><th>Durée</th><th>Poste</th>
+          <th>Jour</th><th>Libellé</th><th>Horaires</th><th>Durée</th><th>Poste</th><th>Salle</th>
           <th style="text-align:center" title="Nombre de postes">Qté</th><th>Notes</th><th></th>
         </tr></thead>
         <tbody>
           <template v-for="row in tableRows" :key="row.isSeparator ? 'sep-'+row.jour : row.id">
-            <tr v-if="row.isSeparator" class="day-separator"><td colspan="8"><span :class="['jour-badge','jour-'+row.jour]" style="margin-right:8px">{{ JOURS_COURT[row.jour] }}</span>{{ row.dateLabel }}</td></tr>
+            <tr v-if="row.isSeparator" class="day-separator"><td colspan="9"><span :class="['jour-badge','jour-'+row.jour]" style="margin-right:8px">{{ JOURS_COURT[row.jour] }}</span>{{ row.dateLabel }}</td></tr>
             <tr v-else>
               <td><span :class="['jour-badge','jour-'+row.jour]">{{ JOURS_COURT[row.jour] }}</span></td>
               <td>{{ row.slot_label }}</td>
               <td class="time-range">{{ row.heure_debut }} → {{ row.heure_fin }}</td>
               <td style="color:#64748b">{{ duration(row.heure_debut, row.heure_fin) }}</td>
               <td style="color:#475569;font-size:12px">{{ posteLabel(row.poste_id) }}</td>
+              <td style="font-size:12px">
+                <span v-if="row.point_de_vente_id"
+                  style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;font-weight:500;white-space:nowrap">
+                  {{ pdvLabel(row.point_de_vente_id) }}
+                </span>
+                <span v-else style="color:#cbd5e1">—</span>
+              </td>
               <td style="text-align:center;font-size:12px;font-weight:600;color:#334155">{{ row.nb_postes ?? 1 }}</td>
               <td style="max-width:180px">
                 <span v-if="row.notes" style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:1px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:170px" :title="row.notes">
@@ -106,6 +113,13 @@ export const TEMPLATE_CRENEAUX = `
             <label>Nombre de postes</label>
             <input type="number" v-model.number="editForm.nb_postes" min="1" max="20" style="text-align:center" />
           </div>
+        </div>
+        <div class="form-group">
+          <label>Salle / point de vente <span style="font-weight:400;color:#94a3b8">(optionnel)</span></label>
+          <select v-model="editForm.point_de_vente_id">
+            <option value="">— Aucune salle —</option>
+            <option v-for="s in pointsDeVente" :key="s.id" :value="s.id">{{ s.nom }}</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Notes pour le staff <span style="font-weight:400;color:#94a3b8">(facultatif)</span></label>
@@ -196,7 +210,7 @@ export const TEMPLATE_CRENEAUX = `
                 <span v-if="formErrors.heure_fin" class="error-msg">{{ formErrors.heure_fin }}</span>
               </div>
             </div>
-            <div class="form-row" style="margin-bottom:14px">
+            <div class="form-row" style="margin-bottom:10px">
               <div class="form-group" style="flex:2">
                 <label>Poste (optionnel)</label>
                 <select v-model="form.poste_id">
@@ -208,6 +222,13 @@ export const TEMPLATE_CRENEAUX = `
                 <label>Nb postes</label>
                 <input type="number" v-model.number="form.nb_postes" min="1" max="20" style="text-align:center" />
               </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Salle (optionnel)</label>
+              <select v-model="form.point_de_vente_id">
+                <option value="">— Aucune salle —</option>
+                <option v-for="s in pointsDeVente" :key="s.id" :value="s.id">{{ s.nom }}</option>
+              </select>
             </div>
             <button class="btn btn-primary btn-full" @click="addCreneau" :disabled="saving">
               <span v-if="saving" class="spinner"></span>

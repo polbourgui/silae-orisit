@@ -13,6 +13,7 @@ import creneauxRouter from './routes/creneaux.js';
 import postesRouter from './routes/postes.js';
 import presetsRouter from './routes/presets.js';
 import adminRouter from './routes/admin.js';
+import pointsDeVenteRouter from './routes/pointsDeVente.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 import errorHandler from './middleware/errorHandler.js';
@@ -70,6 +71,7 @@ app.use('/creneaux', creneauxRouter);
 app.use('/postes', postesRouter);
 app.use('/presets', presetsRouter);
 app.use('/admin', adminRouter);
+app.use('/points-de-vente', pointsDeVenteRouter);
 
 app.use(errorHandler);
 

@@ -2,11 +2,12 @@ import { ref, computed, watch, onMounted } from '/vendor/vue.esm-browser.js';
 import { JOURS, apiFetch, weekBoundsLabel, offsetWeek, groupByJour } from './manager-utils.js';
 
 export function useCreneaux({ currentWeek, showAlert }) {
-  const creneaux    = ref([]);
-  const postes      = ref([]);
-  const loading     = ref(false);
-  const saving      = ref(false);
-  const form        = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', nb_postes: 1, jours: ['lundi'] });
+  const creneaux        = ref([]);
+  const postes          = ref([]);
+  const pointsDeVente   = ref([]);
+  const loading         = ref(false);
+  const saving          = ref(false);
+  const form            = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', point_de_vente_id: '', nb_postes: 1, jours: ['lundi'] });
   const formErrors  = ref({});
   const csvRows     = ref([]);
   const csvParsed   = ref(false);
@@ -32,8 +33,9 @@ export function useCreneaux({ currentWeek, showAlert }) {
     loading.value = true;
     try {
       const data = await apiFetch(`/creneaux/semaine/${currentWeek.value}`);
-      creneaux.value = data.creneaux;
-      postes.value   = data.postes;
+      creneaux.value      = data.creneaux;
+      postes.value        = data.postes;
+      pointsDeVente.value = data.pointsDeVente ?? [];
     } catch (err) { showAlert('error', err.message); }
     finally { loading.value = false; }
   }
@@ -76,8 +78,9 @@ export function useCreneaux({ currentWeek, showAlert }) {
             slot_label:  form.value.slot_label.trim(),
             heure_debut: form.value.heure_debut,
             heure_fin:   form.value.heure_fin,
-            poste_id:    form.value.poste_id || null,
-            nb_postes:   form.value.nb_postes || 1,
+            poste_id:            form.value.poste_id || null,
+            point_de_vente_id:   form.value.point_de_vente_id || null,
+            nb_postes:           form.value.nb_postes || 1,
           }),
         });
         created.push(c);
@@ -86,7 +89,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
         JOURS.indexOf(a.jour) - JOURS.indexOf(b.jour) || a.heure_debut.localeCompare(b.heure_debut)
       );
       showAlert('success', toAdd.length > 1 ? `${toAdd.length} créneaux ajoutés` : 'Créneau ajouté');
-      form.value.slot_label = ''; form.value.poste_id = '';
+      form.value.slot_label = ''; form.value.poste_id = ''; form.value.point_de_vente_id = '';
     } catch (err) { showAlert('error', err.message); }
     finally { saving.value = false; }
   }
@@ -171,6 +174,10 @@ export function useCreneaux({ currentWeek, showAlert }) {
     return postes.value.find(p => p.id === posteId)?.libelle ?? '—';
   }
 
+  function pdvLabel(pdvId) {
+    return pointsDeVente.value.find(p => p.id === pdvId)?.nom ?? '—';
+  }
+
   // ── Édition inline ─────────────────────────────────────────────────────────
   const editModal  = ref(null);
   const editForm   = ref({});
@@ -178,13 +185,14 @@ export function useCreneaux({ currentWeek, showAlert }) {
 
   function openEdit(creneau) {
     editForm.value = {
-      slot_label:  creneau.slot_label,
-      heure_debut: creneau.heure_debut,
-      heure_fin:   creneau.heure_fin,
-      poste_id:    creneau.poste_id ?? '',
-      nb_postes:   creneau.nb_postes ?? 1,
-      notes:       creneau.notes ?? '',
-      jour:        creneau.jour,
+      slot_label:        creneau.slot_label,
+      heure_debut:       creneau.heure_debut,
+      heure_fin:         creneau.heure_fin,
+      poste_id:          creneau.poste_id ?? '',
+      point_de_vente_id: creneau.point_de_vente_id ?? '',
+      nb_postes:         creneau.nb_postes ?? 1,
+      notes:             creneau.notes ?? '',
+      jour:              creneau.jour,
     };
     editModal.value = creneau;
   }
@@ -195,7 +203,11 @@ export function useCreneaux({ currentWeek, showAlert }) {
     try {
       const updated = await apiFetch(
         `/creneaux/semaine/${currentWeek.value}/${editModal.value.id}`,
-        { method: 'PATCH', body: JSON.stringify({ ...editForm.value, poste_id: editForm.value.poste_id || null }) }
+        { method: 'PATCH', body: JSON.stringify({
+          ...editForm.value,
+          poste_id:          editForm.value.poste_id || null,
+          point_de_vente_id: editForm.value.point_de_vente_id || null,
+        }) }
       );
       creneaux.value = creneaux.value.map(c => c.id === updated.id ? updated : c);
       editModal.value = null;
@@ -208,10 +220,10 @@ export function useCreneaux({ currentWeek, showAlert }) {
   onMounted(() => { loadWeek(); loadPresets(); });
 
   return {
-    creneaux, postes, loading, saving, form, formErrors, csvRows, csvParsed,
+    creneaux, postes, pointsDeVente, loading, saving, form, formErrors, csvRows, csvParsed,
     weekLabel, boundsLabel, tableRows, totalHeures,
     toggleJour, addCreneau, applyPreset, deleteCreneau,
-    onFileChange, onDrop, cancelImport, confirmImport, posteLabel,
+    onFileChange, onDrop, cancelImport, confirmImport, posteLabel, pdvLabel,
     presets, presetsEditOpen, presetForm, presetSaving, addPreset, removePreset,
     loadWeek, loadPresets,
     editModal, editForm, editSaving, openEdit, saveEdit,

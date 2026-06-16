@@ -81,6 +81,9 @@ export const TEMPLATE_PLANNING = `
                     <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
                       {{ row.poste.libelle }}
                     </span>
+                    <span v-if="row.pdv_nom" style="flex-shrink:0;font-size:11px;font-weight:500;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;white-space:nowrap">
+                      🏪 {{ row.pdv_nom }}
+                    </span>
                     <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
                       {{ row.nb }} postes
                     </span>
@@ -170,6 +173,7 @@ export const TEMPLATE_PLANNING = `
                 <td v-if="si === 1" :rowspan="row.maxNb" class="ptab-td-label">
                   <div class="ptab-time">{{ row.heure_debut.slice(0,5) }} → {{ row.heure_fin.slice(0,5) }}</div>
                   <div v-if="row.slot_label" class="ptab-slot-label">{{ row.slot_label }}</div>
+                  <div v-if="row.pdv_nom" style="font-size:10px;font-weight:500;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;margin-top:3px;display:inline-block">🏪 {{ row.pdv_nom }}</div>
                   <div v-if="row.maxNb > 1" class="ptab-nb-postes">{{ row.maxNb }} postes</div>
                 </td>
 
