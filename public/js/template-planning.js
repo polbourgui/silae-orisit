@@ -193,7 +193,10 @@ export const TEMPLATE_PLANNING = `
                 <td v-if="si === 1" :rowspan="row.maxNb" class="ptab-td-label">
                   <div class="ptab-time">{{ row.heure_debut.slice(0,5) }} → {{ row.heure_fin.slice(0,5) }}</div>
                   <div v-if="row.slot_label" class="ptab-slot-label">{{ row.slot_label }}</div>
-                  <div v-if="row.pdv_nom" :style="{ fontSize: '10px', fontWeight: '600', color: row.pdv_couleur||'#6366f1', background: (row.pdv_couleur||'#6366f1')+'18', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 6px', marginTop: '3px', display: 'inline-block' }">{{ row.pdv_nom }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">
+                    <span v-if="row.poste" style="font-size:10px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 6px;white-space:nowrap">{{ row.poste.libelle }}</span>
+                    <span v-if="row.pdv_nom" :style="{ fontSize: '10px', fontWeight: '600', color: row.pdv_couleur||'#6366f1', background: (row.pdv_couleur||'#6366f1')+'18', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap' }">{{ row.pdv_nom }}</span>
+                  </div>
                   <div v-if="row.maxNb > 1" class="ptab-nb-postes">{{ row.maxNb }} postes</div>
                 </td>
 

@@ -216,6 +216,7 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     for (const c of pCreneaux.value) {
       const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}|${c.point_de_vente_id ?? ''}`;
       if (!rowMap.has(key)) {
+        const posteRow = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
         rowMap.set(key, {
           key,
           heure_debut:       c.heure_debut,
@@ -224,6 +225,7 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
           pdv_nom:           c.pdv_nom ?? null,
           pdv_couleur:       c.pdv_couleur ?? null,
           point_de_vente_id: c.point_de_vente_id ?? null,
+          poste:             posteRow,
           cells:             {},
           maxNb:             0,
         });
