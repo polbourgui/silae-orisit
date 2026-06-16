@@ -2,12 +2,12 @@ import { ref } from '/vendor/vue.esm-browser.js';
 import { apiFetch } from './manager-utils.js';
 
 export function usePointsDeVente({ showAlert, allPointsDeVente }) {
-  const pdvLoading    = ref(false);
-  const newPdvNom     = ref('');
-  const newPdvCouleur = ref('#6366f1');
-  const pdvSaving     = ref(false);
-  const pdvEditId     = ref(null);
-  const pdvEditNom    = ref('');
+  const pdvLoading     = ref(false);
+  const newPdvNom      = ref('');
+  const newPdvCouleur  = ref('#6366f1');
+  const pdvSaving      = ref(false);
+  const pdvEditId      = ref(null);
+  const pdvEditNom     = ref('');
   const pdvEditCouleur = ref('#6366f1');
 
   async function loadPointsDeVente() {
@@ -36,7 +36,7 @@ export function usePointsDeVente({ showAlert, allPointsDeVente }) {
     if (!pdvEditId.value || !pdvEditNom.value.trim()) return;
     pdvSaving.value = true;
     try {
-      const pdv = await apiFetch(\`/points-de-vente/\${pdvEditId.value}\`, {
+      const pdv = await apiFetch(`/points-de-vente/${pdvEditId.value}`, {
         method: 'PATCH',
         body: JSON.stringify({ nom: pdvEditNom.value, couleur: pdvEditCouleur.value }),
       });
@@ -51,7 +51,7 @@ export function usePointsDeVente({ showAlert, allPointsDeVente }) {
   async function removePointDeVente(id) {
     if (!confirm('Supprimer cette salle ? Les créneaux associés seront dissociés.')) return;
     try {
-      await apiFetch(\`/points-de-vente/\${id}\`, { method: 'DELETE' });
+      await apiFetch(`/points-de-vente/${id}`, { method: 'DELETE' });
       allPointsDeVente.value = allPointsDeVente.value.filter(p => p.id !== id);
     } catch (err) { showAlert('error', err.message); }
   }
@@ -76,7 +76,7 @@ export function usePointsDeVente({ showAlert, allPointsDeVente }) {
   };
 }
 
-export const TEMPLATE_POINTS_DE_VENTE = \`
+export const TEMPLATE_POINTS_DE_VENTE = `
   <template v-if="activeView === 'salles'">
   <div class="page-header">
     <div>
@@ -125,4 +125,4 @@ export const TEMPLATE_POINTS_DE_VENTE = \`
     </div>
   </div>
   </template>
-\`;
+`;
