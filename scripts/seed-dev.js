@@ -175,7 +175,7 @@ for (const e of extrasData) {
   await pool.query(`
     INSERT INTO site_extras (site_id, extra_id, matricule_silae)
     VALUES ($1, $2, $3)
-    ON CONFLICT (site_id, extra_id) DO UPDATE SET matricule_silae = EXCLUDED.matricule_silae
+    ON CONFLICT (site_id, matricule_silae) DO UPDATE SET extra_id = EXCLUDED.extra_id
   `, [SITE_ID, extra.id, e.matricule]);
   extras.push({ ...extra, postesIdx: e.postes });
 }
