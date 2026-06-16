@@ -106,6 +106,9 @@ for (const libelle of postesData) {
 console.log(`✓ ${postes.length} postes`);
 
 // ── Extras ───────────────────────────────────────────────────────────────────
+// Nettoyer les liaisons site ↔ extra pour ce site avant de les recréer (idempotence)
+await pool.query('DELETE FROM site_extras WHERE site_id = $1', [SITE_ID]);
+
 // 50 extras avec noms français réalistes et compétences variées
 // postesData : 0=Chef de rang, 1=Barman, 2=Runner, 3=Responsable, 4=Vestiaire, 5=Billetterie
 const extrasData = [
@@ -173,9 +176,7 @@ for (const e of extrasData) {
   const extra = extRows[0];
   // Liaison site avec matricule Silae propre à ce dossier
   await pool.query(`
-    INSERT INTO site_extras (site_id, extra_id, matricule_silae)
-    VALUES ($1, $2, $3)
-    ON CONFLICT (site_id, matricule_silae) DO UPDATE SET extra_id = EXCLUDED.extra_id
+    INSERT INTO site_extras (site_id, extra_id, matricule_silae) VALUES ($1, $2, $3)
   `, [SITE_ID, extra.id, e.matricule]);
   extras.push({ ...extra, postesIdx: e.postes });
 }
