@@ -179,6 +179,7 @@ export const TEMPLATE_PLANNING = `
           <thead>
             <tr>
               <th class="ptab-th-label">Créneau</th>
+              <th style="width:32px;padding:6px 4px;font-size:11px;color:#94a3b8;text-align:center;font-weight:500">#</th>
               <th v-for="day in pFilteredTableauData.days" :key="day" class="ptab-th-day">
                 {{ day.charAt(0).toUpperCase() + day.slice(1) }}
               </th>
@@ -197,7 +198,15 @@ export const TEMPLATE_PLANNING = `
                     <span v-if="row.poste" style="font-size:10px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 6px;white-space:nowrap">{{ row.poste.libelle }}</span>
                     <span v-if="row.pdv_nom" :style="{ fontSize: '10px', fontWeight: '600', color: row.pdv_couleur||'#6366f1', background: (row.pdv_couleur||'#6366f1')+'18', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap' }">{{ row.pdv_nom }}</span>
                   </div>
-                  <div v-if="row.maxNb > 1" class="ptab-nb-postes">{{ row.maxNb }} postes</div>
+                </td>
+
+                <!-- Colonne numéro de poste -->
+                <td style="width:32px;text-align:center;vertical-align:middle;padding:4px 2px;border-right:1px solid #f1f5f9">
+                  <span v-if="row.maxNb > 1"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700">
+                    {{ si }}
+                  </span>
+                  <span v-else style="color:#e2e8f0;font-size:11px">—</span>
                 </td>
 
                 <!-- Cellules par jour -->
@@ -207,9 +216,6 @@ export const TEMPLATE_PLANNING = `
                   <!-- v-for sur un tableau d'un élément = variable locale "slot" -->
                   <template v-for="slot in [row.cells[day]?.slots?.[si - 1]]" :key="slot ? slot.slotKey : 'empty'">
                     <template v-if="slot">
-                      <div v-if="row.maxNb > 1" style="font-size:10px;color:#94a3b8;margin-bottom:3px;font-weight:500">
-                        poste {{ si }}/{{ row.cells[day].nb }}
-                      </div>
                       <div :style="{ position: 'relative', zIndex: pSearchState[slot.slotKey]?.open ? 50 : 'auto' }">
                         <div :class="['assignee-field', 'ptab-assignee',
                           slot.extra ? 'is-filled' : '',
