@@ -34,23 +34,43 @@ export async function findCreneauxBySemaine(semaineId, siteId = null) {
 
 export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, heureFin, posteId, nbPostes = 1, notes = null, pointDeVenteId = null }) {
   const { rows } = await pool.query(
-    `INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes, notes, point_de_vente_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING ${CRENEAU_COLS}`,
+    `WITH ins AS (
+       INSERT INTO creneaux (semaine_id, jour, slot_label, heure_debut, heure_fin, poste_id, nb_postes, notes, point_de_vente_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *
+     )
+     SELECT ins.id, ins.semaine_id, ins.jour, ins.slot_label, ins.heure_debut, ins.heure_fin,
+            ins.poste_id, ins.nb_postes, ins.notes, ins.point_de_vente_id,
+            p.libelle AS poste_libelle,
+            pdv.nom   AS pdv_nom
+     FROM ins
+     JOIN semaines s ON s.id = ins.semaine_id
+     LEFT JOIN postes p   ON p.id  = ins.poste_id          AND p.site_id   = s.site_id
+     LEFT JOIN points_de_vente pdv ON pdv.id = ins.point_de_vente_id AND pdv.site_id = s.site_id`,
     [semaineId, jour, slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes, notes ?? null, pointDeVenteId ?? null]
   );
-  return rows[0];
+  return rows[0] ? { ...rows[0], heure_debut: normalizeTime(rows[0].heure_debut), heure_fin: normalizeTime(rows[0].heure_fin) } : null;
 }
 
 export async function updateCreneau(creneauId, semaineId, { slotLabel, heureDebut, heureFin, posteId, nbPostes, notes, pointDeVenteId }) {
   const { rows } = await pool.query(
-    `UPDATE creneaux
-     SET slot_label = $1, heure_debut = $2, heure_fin = $3, poste_id = $4, nb_postes = $5, notes = $6, point_de_vente_id = $7
-     WHERE id = $8 AND semaine_id = $9
-     RETURNING ${CRENEAU_COLS}`,
+    `WITH upd AS (
+       UPDATE creneaux
+       SET slot_label = $1, heure_debut = $2, heure_fin = $3, poste_id = $4, nb_postes = $5, notes = $6, point_de_vente_id = $7
+       WHERE id = $8 AND semaine_id = $9
+       RETURNING *
+     )
+     SELECT upd.id, upd.semaine_id, upd.jour, upd.slot_label, upd.heure_debut, upd.heure_fin,
+            upd.poste_id, upd.nb_postes, upd.notes, upd.point_de_vente_id,
+            p.libelle AS poste_libelle,
+            pdv.nom   AS pdv_nom
+     FROM upd
+     JOIN semaines s ON s.id = upd.semaine_id
+     LEFT JOIN postes p   ON p.id  = upd.poste_id          AND p.site_id   = s.site_id
+     LEFT JOIN points_de_vente pdv ON pdv.id = upd.point_de_vente_id AND pdv.site_id = s.site_id`,
     [slotLabel, heureDebut, heureFin, posteId ?? null, nbPostes, notes ?? null, pointDeVenteId ?? null, creneauId, semaineId]
   );
-  return rows[0] ?? null;
+  return rows[0] ? { ...rows[0], heure_debut: normalizeTime(rows[0].heure_debut), heure_fin: normalizeTime(rows[0].heure_fin) } : null;
 }
 
 export async function createCreneauxBatch(semaineId, creneaux) {
