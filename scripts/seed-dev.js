@@ -118,15 +118,19 @@ await pool.query(`
 `).catch(() => {});
 await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS point_de_vente_id UUID REFERENCES points_de_vente(id) ON DELETE SET NULL`).catch(() => {});
 
-const pdvData = ['Bar', 'Salle principale', 'Terrasse'];
+const pdvData = [
+  { nom: 'Bar',              couleur: '#f59e0b', sort_order: 0 },
+  { nom: 'Salle principale', couleur: '#6366f1', sort_order: 1 },
+  { nom: 'Terrasse',         couleur: '#10b981', sort_order: 2 },
+];
 const pdvs = [];
-for (let i = 0; i < pdvData.length; i++) {
+for (const p of pdvData) {
   const { rows } = await pool.query(`
-    INSERT INTO points_de_vente (site_id, nom, sort_order)
-    VALUES ($1, $2, $3)
-    ON CONFLICT (site_id, nom) DO UPDATE SET sort_order = EXCLUDED.sort_order
-    RETURNING id, nom
-  `, [SITE_ID, pdvData[i], i]);
+    INSERT INTO points_de_vente (site_id, nom, couleur, sort_order)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (site_id, nom) DO UPDATE SET couleur = EXCLUDED.couleur, sort_order = EXCLUDED.sort_order
+    RETURNING id, nom, couleur
+  `, [SITE_ID, p.nom, p.couleur, p.sort_order]);
   pdvs.push(rows[0]);
 }
 console.log(`✓ ${pdvs.length} points de vente`);

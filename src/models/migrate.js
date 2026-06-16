@@ -50,6 +50,7 @@ export async function applyIncrementalMigrations() {
   `);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS point_de_vente_id UUID REFERENCES points_de_vente(id) ON DELETE SET NULL`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS notes TEXT`);
+  await pool.query(`ALTER TABLE points_de_vente ADD COLUMN IF NOT EXISTS couleur VARCHAR(7) NOT NULL DEFAULT '#6366f1'`);
 
   // Indexes de performance
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_creneaux_semaine_id ON creneaux(semaine_id)`);

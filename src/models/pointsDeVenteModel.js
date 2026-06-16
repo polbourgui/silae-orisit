@@ -1,6 +1,6 @@
 import pool from './db.js';
 
-const PDV_COLS = 'id, site_id, nom, sort_order, created_at';
+const PDV_COLS = 'id, site_id, nom, couleur, sort_order, created_at';
 
 export async function findPointsDeVenteBySite(siteId) {
   const { rows } = await pool.query(
@@ -10,20 +10,20 @@ export async function findPointsDeVenteBySite(siteId) {
   return rows;
 }
 
-export async function createPointDeVente(siteId, nom) {
+export async function createPointDeVente(siteId, nom, couleur = '#6366f1') {
   const { rows } = await pool.query(
-    `INSERT INTO points_de_vente (site_id, nom)
-     VALUES ($1, $2)
+    `INSERT INTO points_de_vente (site_id, nom, couleur)
+     VALUES ($1, $2, $3)
      RETURNING ${PDV_COLS}`,
-    [siteId, nom.trim()]
+    [siteId, nom.trim(), couleur]
   );
   return rows[0];
 }
 
-export async function updatePointDeVente(id, siteId, nom) {
+export async function updatePointDeVente(id, siteId, nom, couleur) {
   const { rows } = await pool.query(
-    `UPDATE points_de_vente SET nom = $1 WHERE id = $2 AND site_id = $3 RETURNING ${PDV_COLS}`,
-    [nom.trim(), id, siteId]
+    `UPDATE points_de_vente SET nom = $1, couleur = $2 WHERE id = $3 AND site_id = $4 RETURNING ${PDV_COLS}`,
+    [nom.trim(), couleur, id, siteId]
   );
   return rows[0] ?? null;
 }

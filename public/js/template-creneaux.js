@@ -59,7 +59,7 @@ export const TEMPLATE_CRENEAUX = `
               <td style="color:#475569;font-size:12px">{{ posteLabel(row.poste_id) }}</td>
               <td style="font-size:12px">
                 <span v-if="row.point_de_vente_id"
-                  style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;font-weight:500;white-space:nowrap">
+                  :style="{ background: pdvColor(row.point_de_vente_id)+'22', color: pdvColor(row.point_de_vente_id), border: '1px solid '+pdvColor(row.point_de_vente_id)+'55', borderRadius: '4px', padding: '1px 7px', fontWeight: '600', whiteSpace: 'nowrap' }">
                   {{ pdvLabel(row.point_de_vente_id) }}
                 </span>
                 <span v-else style="color:#cbd5e1">—</span>

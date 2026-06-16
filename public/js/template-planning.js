@@ -44,6 +44,20 @@ export const TEMPLATE_PLANNING = `
       </div>
     </div>
 
+    <!-- ── Filtre par salle ── -->
+    <div v-if="allPointsDeVente.length > 0" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px">
+      <button
+        :style="{ background: pFilterPdv === null ? '#1e40af' : '#f1f5f9', color: pFilterPdv === null ? '#fff' : '#475569', border: '1px solid '+(pFilterPdv === null ? '#1e40af' : '#e2e8f0'), borderRadius: '20px', padding: '4px 14px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }"
+        @click="pFilterPdv = null">
+        Toutes les salles
+      </button>
+      <button v-for="pdv in allPointsDeVente" :key="pdv.id"
+        :style="{ background: pFilterPdv === pdv.id ? pdv.couleur : pdv.couleur+'18', color: pFilterPdv === pdv.id ? '#fff' : pdv.couleur, border: '1px solid '+pdv.couleur+(pFilterPdv === pdv.id ? '' : '55'), borderRadius: '20px', padding: '4px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }"
+        @click="pFilterPdv = pFilterPdv === pdv.id ? null : pdv.id">
+        {{ pdv.nom }}
+      </button>
+    </div>
+
     <div class="view-tabs">
       <button :class="['view-tab', planningDisplayMode === 'liste' ? 'view-tab-active' : '']"
         @click="planningDisplayMode = 'liste'">≡ Vue liste</button>
@@ -63,7 +77,10 @@ export const TEMPLATE_PLANNING = `
 
       <!-- ── Vue liste ── -->
       <template v-if="planningDisplayMode === 'liste'">
-        <template v-for="row in pTableRows" :key="row.isSep ? 'sep-'+row.jour : row.slotKey">
+        <div v-if="pFilteredTableRows.length === 0" class="empty-state" style="padding:32px">
+          <p style="color:#94a3b8;font-size:13px">Aucun créneau pour cette salle.</p>
+        </div>
+        <template v-else v-for="row in pFilteredTableRows" :key="row.isSep ? 'sep-'+row.jour : row.slotKey">
 
           <div v-if="row.isSep" class="planning-day-header">
             {{ row.jour.charAt(0).toUpperCase() + row.jour.slice(1) }}
@@ -81,8 +98,8 @@ export const TEMPLATE_PLANNING = `
                     <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
                       {{ row.poste.libelle }}
                     </span>
-                    <span v-if="row.pdv_nom" style="flex-shrink:0;font-size:11px;font-weight:500;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:4px;padding:1px 7px;white-space:nowrap">
-                      🏪 {{ row.pdv_nom }}
+                    <span v-if="row.pdv_nom" :style="{ flexShrink: '0', fontSize: '11px', fontWeight: '600', background: (row.pdv_couleur||'#6366f1')+'22', color: row.pdv_couleur||'#6366f1', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 7px', whiteSpace: 'nowrap' }">
+                      {{ row.pdv_nom }}
                     </span>
                     <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
                       {{ row.nb }} postes
@@ -155,17 +172,20 @@ export const TEMPLATE_PLANNING = `
 
       <!-- ── Vue tableau ── -->
       <div v-else class="ptab-container">
-        <table class="ptab-table">
+        <div v-if="pFilteredTableauData.rows.length === 0" class="empty-state" style="padding:32px">
+          <p style="color:#94a3b8;font-size:13px">Aucun créneau pour cette salle.</p>
+        </div>
+        <table v-else class="ptab-table">
           <thead>
             <tr>
               <th class="ptab-th-label">Créneau</th>
-              <th v-for="day in pTableauData.days" :key="day" class="ptab-th-day">
+              <th v-for="day in pFilteredTableauData.days" :key="day" class="ptab-th-day">
                 {{ day.charAt(0).toUpperCase() + day.slice(1) }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <template v-for="row in pTableauData.rows" :key="row.key">
+            <template v-for="row in pFilteredTableauData.rows" :key="row.key">
               <tr v-for="si in row.maxNb" :key="si"
                 :class="si === 1 ? 'ptab-tr-first' : 'ptab-tr-sub'">
 
@@ -173,12 +193,12 @@ export const TEMPLATE_PLANNING = `
                 <td v-if="si === 1" :rowspan="row.maxNb" class="ptab-td-label">
                   <div class="ptab-time">{{ row.heure_debut.slice(0,5) }} → {{ row.heure_fin.slice(0,5) }}</div>
                   <div v-if="row.slot_label" class="ptab-slot-label">{{ row.slot_label }}</div>
-                  <div v-if="row.pdv_nom" style="font-size:10px;font-weight:500;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;margin-top:3px;display:inline-block">🏪 {{ row.pdv_nom }}</div>
+                  <div v-if="row.pdv_nom" :style="{ fontSize: '10px', fontWeight: '600', color: row.pdv_couleur||'#6366f1', background: (row.pdv_couleur||'#6366f1')+'18', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 6px', marginTop: '3px', display: 'inline-block' }">{{ row.pdv_nom }}</div>
                   <div v-if="row.maxNb > 1" class="ptab-nb-postes">{{ row.maxNb }} postes</div>
                 </td>
 
                 <!-- Cellules par jour -->
-                <td v-for="day in pTableauData.days" :key="day" class="ptab-td-slot"
+                <td v-for="day in pFilteredTableauData.days" :key="day" class="ptab-td-slot"
                   :class="!row.cells[day] ? 'ptab-td-na' : ''">
 
                   <!-- v-for sur un tableau d'un élément = variable locale "slot" -->

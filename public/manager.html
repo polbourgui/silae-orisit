@@ -65,7 +65,7 @@ const app = createApp({
     const boundsLabel = computed(() => weekBoundsLabel(currentWeek.value));
 
     watch(activeView, v => {
-      if (v === 'planning') { p.loadPlanning(); if (allPostes.value.length === 0) po.loadPostes(); }
+      if (v === 'planning') { p.loadPlanning(); if (allPostes.value.length === 0) po.loadPostes(); if (allPointsDeVente.value.length === 0) pdv.loadPointsDeVente(); }
       if (v === 'extras')   { if (e.eExtras.value.length === 0) e.loadExtras(); if (allPostes.value.length === 0) po.loadPostes(); }
       if (v === 'postes' && allPostes.value.length === 0) po.loadPostes();
       if (v === 'salles') pdv.loadPointsDeVente();

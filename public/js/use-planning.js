@@ -10,6 +10,7 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
   const pSaving            = ref(false);
   const pSearchState       = ref({});
   const planningDisplayMode = ref('liste');
+  const pFilterPdv         = ref(null); // null = toutes les salles
 
   const pIsPublished = computed(() => !!pPlanning.value?.published_at);
   const pNbPourvus   = computed(() => pAffectations.value.length);
@@ -30,6 +31,22 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
       }
     }
     return rows;
+  });
+
+  // Vue liste filtrée : supprime les séparateurs de jour orphelins
+  const pFilteredTableRows = computed(() => {
+    if (!pFilterPdv.value) return pTableRows.value;
+    const result = [];
+    let pendingSep = null;
+    for (const row of pTableRows.value) {
+      if (row.isSep) {
+        pendingSep = row;
+      } else if (row.point_de_vente_id === pFilterPdv.value) {
+        if (pendingSep) { result.push(pendingSep); pendingSep = null; }
+        result.push(row);
+      }
+    }
+    return result;
   });
 
   async function loadPlanning() {
@@ -201,13 +218,14 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
       if (!rowMap.has(key)) {
         rowMap.set(key, {
           key,
-          heure_debut:      c.heure_debut,
-          heure_fin:        c.heure_fin,
-          slot_label:       c.slot_label,
-          pdv_nom:          c.pdv_nom ?? null,
+          heure_debut:       c.heure_debut,
+          heure_fin:         c.heure_fin,
+          slot_label:        c.slot_label,
+          pdv_nom:           c.pdv_nom ?? null,
+          pdv_couleur:       c.pdv_couleur ?? null,
           point_de_vente_id: c.point_de_vente_id ?? null,
-          cells:            {},
-          maxNb:            0,
+          cells:             {},
+          maxNb:             0,
         });
       }
       const row = rowMap.get(key);
@@ -238,13 +256,23 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     return { days, rows };
   });
 
+  // Vue tableau filtrée par salle
+  const pFilteredTableauData = computed(() => {
+    if (!pFilterPdv.value) return pTableauData.value;
+    const rows = pTableauData.value.rows.filter(r => r.point_de_vente_id === pFilterPdv.value);
+    const daysSet = new Set(rows.flatMap(r => Object.keys(r.cells)));
+    const days = JOURS_ORDER.filter(j => daysSet.has(j));
+    return { days, rows };
+  });
+
   watch(currentWeek, () => { if (activeView.value === 'planning') loadPlanning(); });
 
   return {
     pPlanning, pIsPublished, pLoading, pSaving,
     pCreneaux, pExtras, pAffectations,
-    pTableRows, pTableauData, pNbPourvus, pNbTotal, pSearchState,
-    planningDisplayMode,
+    pTableRows, pFilteredTableRows, pTableauData, pFilteredTableauData,
+    pNbPourvus, pNbTotal, pSearchState,
+    planningDisplayMode, pFilterPdv,
     loadPlanning, proposeAlgo, publishPlanning,
     filteredExtras, openSearch, closeSearch, selectExtra, clearExtra, dropStyle,
   };

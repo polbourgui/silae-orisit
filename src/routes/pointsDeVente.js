@@ -20,7 +20,8 @@ router.post('/', async (req, res, next) => {
   try {
     assertRequired(req.body, ['nom']);
     if (!req.body.nom.trim()) throw new ValidationError('nom requis');
-    const pdv = await createPointDeVente(req.siteId, req.body.nom);
+    const couleur = /^#[0-9a-fA-F]{6}$/.test(req.body.couleur ?? '') ? req.body.couleur : '#6366f1';
+    const pdv = await createPointDeVente(req.siteId, req.body.nom, couleur);
     res.status(201).json({ ok: true, data: pdv });
   } catch (err) { next(err); }
 });
@@ -30,7 +31,8 @@ router.patch('/:id', async (req, res, next) => {
     if (!validateUUID(req.params.id)) throw new ValidationError('UUID invalide');
     assertRequired(req.body, ['nom']);
     if (!req.body.nom.trim()) throw new ValidationError('nom requis');
-    const pdv = await updatePointDeVente(req.params.id, req.siteId, req.body.nom);
+    const couleur = /^#[0-9a-fA-F]{6}$/.test(req.body.couleur ?? '') ? req.body.couleur : '#6366f1';
+    const pdv = await updatePointDeVente(req.params.id, req.siteId, req.body.nom, couleur);
     if (!pdv) throw new NotFoundError('Point de vente introuvable');
     res.json({ ok: true, data: pdv });
   } catch (err) { next(err); }

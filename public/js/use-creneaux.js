@@ -178,6 +178,10 @@ export function useCreneaux({ currentWeek, showAlert }) {
     return pointsDeVente.value.find(p => p.id === pdvId)?.nom ?? '—';
   }
 
+  function pdvColor(pdvId) {
+    return pointsDeVente.value.find(p => p.id === pdvId)?.couleur ?? '#6366f1';
+  }
+
   // ── Édition inline ─────────────────────────────────────────────────────────
   const editModal  = ref(null);
   const editForm   = ref({});
@@ -223,7 +227,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
     creneaux, postes, pointsDeVente, loading, saving, form, formErrors, csvRows, csvParsed,
     weekLabel, boundsLabel, tableRows, totalHeures,
     toggleJour, addCreneau, applyPreset, deleteCreneau,
-    onFileChange, onDrop, cancelImport, confirmImport, posteLabel, pdvLabel,
+    onFileChange, onDrop, cancelImport, confirmImport, posteLabel, pdvLabel, pdvColor,
     presets, presetsEditOpen, presetForm, presetSaving, addPreset, removePreset,
     loadWeek, loadPresets,
     editModal, editForm, editSaving, openEdit, saveEdit,

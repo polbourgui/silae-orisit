@@ -15,7 +15,7 @@ export async function findCreneauxBySemaine(semaineId, siteId = null) {
     `SELECT c.id, c.semaine_id, c.jour, c.slot_label, c.heure_debut, c.heure_fin,
             c.poste_id, c.nb_postes, c.notes, c.point_de_vente_id,
             p.libelle AS poste_libelle,
-            pdv.nom AS pdv_nom
+            pdv.nom AS pdv_nom, pdv.couleur AS pdv_couleur
      FROM creneaux c
      JOIN semaines s ON s.id = c.semaine_id
      LEFT JOIN postes p ON p.id = c.poste_id AND p.site_id = s.site_id
@@ -42,7 +42,7 @@ export async function createCreneau({ semaineId, jour, slotLabel, heureDebut, he
      SELECT ins.id, ins.semaine_id, ins.jour, ins.slot_label, ins.heure_debut, ins.heure_fin,
             ins.poste_id, ins.nb_postes, ins.notes, ins.point_de_vente_id,
             p.libelle AS poste_libelle,
-            pdv.nom   AS pdv_nom
+            pdv.nom   AS pdv_nom, pdv.couleur AS pdv_couleur
      FROM ins
      JOIN semaines s ON s.id = ins.semaine_id
      LEFT JOIN postes p   ON p.id  = ins.poste_id          AND p.site_id   = s.site_id
@@ -63,7 +63,7 @@ export async function updateCreneau(creneauId, semaineId, { slotLabel, heureDebu
      SELECT upd.id, upd.semaine_id, upd.jour, upd.slot_label, upd.heure_debut, upd.heure_fin,
             upd.poste_id, upd.nb_postes, upd.notes, upd.point_de_vente_id,
             p.libelle AS poste_libelle,
-            pdv.nom   AS pdv_nom
+            pdv.nom   AS pdv_nom, pdv.couleur AS pdv_couleur
      FROM upd
      JOIN semaines s ON s.id = upd.semaine_id
      LEFT JOIN postes p   ON p.id  = upd.poste_id          AND p.site_id   = s.site_id
