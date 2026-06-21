@@ -38,7 +38,23 @@ export async function applyIncrementalMigrations() {
     )
   `);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS nb_postes INTEGER NOT NULL DEFAULT 1`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS points_de_vente (
+      id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      site_id     UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+      nom         VARCHAR(100) NOT NULL,
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (site_id, nom)
+    )
+  `);
+  await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS point_de_vente_id UUID REFERENCES points_de_vente(id) ON DELETE SET NULL`);
   await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS notes TEXT`);
+  await pool.query(`ALTER TABLE points_de_vente ADD COLUMN IF NOT EXISTS couleur VARCHAR(7) NOT NULL DEFAULT '#6366f1'`);
+
+  // Reporting : type d'activité sur les créneaux + taux horaire estimé sur les postes
+  await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS type_activite TEXT CHECK (type_activite IN ('restauration', 'programmation', 'privatisation', 'autre'))`);
+  await pool.query(`ALTER TABLE postes ADD COLUMN IF NOT EXISTS taux_horaire_estime NUMERIC(8,2)`);
 
   // Indexes de performance
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_creneaux_semaine_id ON creneaux(semaine_id)`);

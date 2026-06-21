@@ -44,6 +44,20 @@ export const TEMPLATE_PLANNING = `
       </div>
     </div>
 
+    <!-- ── Filtre par salle ── -->
+    <div v-if="allPointsDeVente.length > 0" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 12px">
+      <button
+        :style="{ background: pFilterPdv === null ? '#1e40af' : '#f1f5f9', color: pFilterPdv === null ? '#fff' : '#475569', border: '1px solid '+(pFilterPdv === null ? '#1e40af' : '#e2e8f0'), borderRadius: '20px', padding: '4px 14px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' }"
+        @click="pFilterPdv = null">
+        Toutes les salles
+      </button>
+      <button v-for="pdv in allPointsDeVente" :key="pdv.id"
+        :style="{ background: pFilterPdv === pdv.id ? pdv.couleur : pdv.couleur+'18', color: pFilterPdv === pdv.id ? '#fff' : pdv.couleur, border: '1px solid '+pdv.couleur+(pFilterPdv === pdv.id ? '' : '55'), borderRadius: '20px', padding: '4px 14px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }"
+        @click="pFilterPdv = pFilterPdv === pdv.id ? null : pdv.id">
+        {{ pdv.nom }}
+      </button>
+    </div>
+
     <div class="view-tabs">
       <button :class="['view-tab', planningDisplayMode === 'liste' ? 'view-tab-active' : '']"
         @click="planningDisplayMode = 'liste'">≡ Vue liste</button>
@@ -63,7 +77,10 @@ export const TEMPLATE_PLANNING = `
 
       <!-- ── Vue liste ── -->
       <template v-if="planningDisplayMode === 'liste'">
-        <template v-for="row in pTableRows" :key="row.isSep ? 'sep-'+row.jour : row.slotKey">
+        <div v-if="pFilteredTableRows.length === 0" class="empty-state" style="padding:32px">
+          <p style="color:#94a3b8;font-size:13px">Aucun créneau pour cette salle.</p>
+        </div>
+        <template v-else v-for="row in pFilteredTableRows" :key="row.isSep ? 'sep-'+row.jour : row.slotKey">
 
           <div v-if="row.isSep" class="planning-day-header">
             {{ row.jour.charAt(0).toUpperCase() + row.jour.slice(1) }}
@@ -80,6 +97,9 @@ export const TEMPLATE_PLANNING = `
                     <span style="font-size:13px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.slot_label }}</span>
                     <span v-if="row.poste" style="flex-shrink:0;font-size:11px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 7px;white-space:nowrap">
                       {{ row.poste.libelle }}
+                    </span>
+                    <span v-if="row.pdv_nom" :style="{ flexShrink: '0', fontSize: '11px', fontWeight: '600', background: (row.pdv_couleur||'#6366f1')+'22', color: row.pdv_couleur||'#6366f1', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 7px', whiteSpace: 'nowrap' }">
+                      {{ row.pdv_nom }}
                     </span>
                     <span v-if="row.nb > 1" style="flex-shrink:0;font-size:10px;color:#94a3b8;background:#f1f5f9;border-radius:10px;padding:1px 6px">
                       {{ row.nb }} postes
@@ -152,17 +172,21 @@ export const TEMPLATE_PLANNING = `
 
       <!-- ── Vue tableau ── -->
       <div v-else class="ptab-container">
-        <table class="ptab-table">
+        <div v-if="pFilteredTableauData.rows.length === 0" class="empty-state" style="padding:32px">
+          <p style="color:#94a3b8;font-size:13px">Aucun créneau pour cette salle.</p>
+        </div>
+        <table v-else class="ptab-table">
           <thead>
             <tr>
               <th class="ptab-th-label">Créneau</th>
-              <th v-for="day in pTableauData.days" :key="day" class="ptab-th-day">
+              <th style="width:32px;padding:6px 4px;font-size:11px;color:#94a3b8;text-align:center;font-weight:500">#</th>
+              <th v-for="day in pFilteredTableauData.days" :key="day" class="ptab-th-day">
                 {{ day.charAt(0).toUpperCase() + day.slice(1) }}
               </th>
             </tr>
           </thead>
           <tbody>
-            <template v-for="row in pTableauData.rows" :key="row.key">
+            <template v-for="row in pFilteredTableauData.rows" :key="row.key">
               <tr v-for="si in row.maxNb" :key="si"
                 :class="si === 1 ? 'ptab-tr-first' : 'ptab-tr-sub'">
 
@@ -170,78 +194,85 @@ export const TEMPLATE_PLANNING = `
                 <td v-if="si === 1" :rowspan="row.maxNb" class="ptab-td-label">
                   <div class="ptab-time">{{ row.heure_debut.slice(0,5) }} → {{ row.heure_fin.slice(0,5) }}</div>
                   <div v-if="row.slot_label" class="ptab-slot-label">{{ row.slot_label }}</div>
-                  <div v-if="row.maxNb > 1" class="ptab-nb-postes">{{ row.maxNb }} postes</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">
+                    <span v-if="row.poste" style="font-size:10px;font-weight:600;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 6px;white-space:nowrap">{{ row.poste.libelle }}</span>
+                    <span v-if="row.pdv_nom" :style="{ fontSize: '10px', fontWeight: '600', color: row.pdv_couleur||'#6366f1', background: (row.pdv_couleur||'#6366f1')+'18', border: '1px solid '+(row.pdv_couleur||'#6366f1')+'55', borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap' }">{{ row.pdv_nom }}</span>
+                  </div>
+                </td>
+
+                <!-- Colonne numéro de poste -->
+                <td style="width:32px;text-align:center;vertical-align:middle;padding:4px 2px;border-right:1px solid #f1f5f9">
+                  <span v-if="row.maxNb > 1"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700">
+                    {{ si }}
+                  </span>
+                  <span v-else style="color:#e2e8f0;font-size:11px">—</span>
                 </td>
 
                 <!-- Cellules par jour -->
-                <td v-for="day in pTableauData.days" :key="day" class="ptab-td-slot"
+                <td v-for="day in pFilteredTableauData.days" :key="day" class="ptab-td-slot"
                   :class="!row.cells[day] ? 'ptab-td-na' : ''">
 
-                  <template v-if="row.cells[day] && row.cells[day].slots[si - 1]">
-                    <div :style="{ position: 'relative', zIndex: pSearchState[row.cells[day].slots[si-1].slotKey]?.open ? 50 : 'auto' }">
-                      <div :class="['assignee-field', 'ptab-assignee',
-                        row.cells[day].slots[si-1].extra ? 'is-filled' : '',
-                        pSearchState[row.cells[day].slots[si-1].slotKey]?.open ? 'is-focused' : '']">
-                        <div v-if="row.cells[day].slots[si-1].extra" class="avatar"
-                          :style="{ background: avatarColor(row.cells[day].slots[si-1].extra.id) }">
-                          {{ initials(row.cells[day].slots[si-1].extra.nom, row.cells[day].slots[si-1].extra.prenom) }}
+                  <!-- v-for sur un tableau d'un élément = variable locale "slot" -->
+                  <template v-for="slot in [row.cells[day]?.slots?.[si - 1]]" :key="slot ? slot.slotKey : 'empty'">
+                    <template v-if="slot">
+                      <div :style="{ position: 'relative', zIndex: pSearchState[slot.slotKey]?.open ? 50 : 'auto' }">
+                        <div :class="['assignee-field', 'ptab-assignee',
+                          slot.extra ? 'is-filled' : '',
+                          pSearchState[slot.slotKey]?.open ? 'is-focused' : '']">
+                          <div v-if="slot.extra" class="avatar" :style="{ background: avatarColor(slot.extra.id) }">
+                            {{ initials(slot.extra.nom, slot.extra.prenom) }}
+                          </div>
+                          <input v-if="!pIsPublished" type="text"
+                            :placeholder="slot.extra ? slot.extra.prenom + ' ' + slot.extra.nom : 'Extra…'"
+                            :style="slot.extra ? 'color:#15803d;font-weight:500' : ''"
+                            :value="pSearchState[slot.slotKey]?.query ?? ''"
+                            @input="pSearchState[slot.slotKey].query = $event.target.value"
+                            @focus="openSearch(slot.slotKey, $event)"
+                            @blur="closeSearch(slot.slotKey)"
+                          />
+                          <span v-else style="flex:1;font-size:12px;color:#15803d;font-weight:500">
+                            {{ slot.extra ? slot.extra.prenom + ' ' + slot.extra.nom : '—' }}
+                          </span>
+                          <span v-if="slot.extra && !pIsPublished" class="clear-btn"
+                            @mousedown.prevent="clearExtra(slot.slotKey)">✕</span>
                         </div>
-                        <input v-if="!pIsPublished" type="text"
-                          :placeholder="row.cells[day].slots[si-1].extra
-                            ? row.cells[day].slots[si-1].extra.prenom + ' ' + row.cells[day].slots[si-1].extra.nom
-                            : 'Extra…'"
-                          :style="row.cells[day].slots[si-1].extra ? 'color:#15803d;font-weight:500' : ''"
-                          :value="pSearchState[row.cells[day].slots[si-1].slotKey]?.query"
-                          @input="pSearchState[row.cells[day].slots[si-1].slotKey].query = $event.target.value"
-                          @focus="openSearch(row.cells[day].slots[si-1].slotKey, $event)"
-                          @blur="closeSearch(row.cells[day].slots[si-1].slotKey)"
-                        />
-                        <span v-else style="flex:1;font-size:12px;color:#15803d;font-weight:500">
-                          {{ row.cells[day].slots[si-1].extra
-                            ? row.cells[day].slots[si-1].extra.prenom + ' ' + row.cells[day].slots[si-1].extra.nom
-                            : '—' }}
-                        </span>
-                        <span v-if="row.cells[day].slots[si-1].extra && !pIsPublished"
-                          class="clear-btn"
-                          @mousedown.prevent="clearExtra(row.cells[day].slots[si-1].slotKey)">✕</span>
-                      </div>
 
-                      <Teleport to="body">
-                        <div v-if="pSearchState[row.cells[day].slots[si-1].slotKey]?.open"
-                          class="suggestions"
-                          :style="dropStyle(row.cells[day].slots[si-1].slotKey)">
-                          <div v-if="filteredExtras(row.cells[day].slots[si-1].slotKey).length === 0"
-                            style="padding:10px 12px;color:#94a3b8;font-size:12px">
-                            Aucun résultat
-                          </div>
-                          <div v-for="(e, idx) in filteredExtras(row.cells[day].slots[si-1].slotKey)"
-                            :key="e.id"
-                            :class="['suggestion-item', idx === pSearchState[row.cells[day].slots[si-1].slotKey].activeIdx ? 'active' : '']"
-                            @mousedown.prevent="selectExtra(row.cells[day].slots[si-1].slotKey, e.id)">
-                            <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
-                            <span class="extra-name" :style="e.conflict ? 'opacity:.5' : ''">{{ e.prenom }} {{ e.nom }}</span>
-                            <span v-if="e.conflict"
-                              :style="e.conflict.type === 'overlap' ? 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca' : 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa'"
-                              style="font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap;flex-shrink:0">
-                              ⚠ {{ e.conflict.label }}
-                            </span>
-                            <template v-else>
-                              <span v-if="row.cells[day].creneau.poste_id" class="dispo-tag"
-                                :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
-                                {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                        <Teleport to="body">
+                          <div v-if="pSearchState[slot.slotKey]?.open"
+                            class="suggestions" :style="dropStyle(slot.slotKey)">
+                            <div v-if="filteredExtras(slot.slotKey).length === 0"
+                              style="padding:10px 12px;color:#94a3b8;font-size:12px">
+                              Aucun résultat
+                            </div>
+                            <div v-for="(e, idx) in filteredExtras(slot.slotKey)" :key="e.id"
+                              :class="['suggestion-item', idx === pSearchState[slot.slotKey].activeIdx ? 'active' : '']"
+                              @mousedown.prevent="selectExtra(slot.slotKey, e.id)">
+                              <div class="av" :style="{ background: avatarColor(e.id) }">{{ initials(e.nom, e.prenom) }}</div>
+                              <span class="extra-name" :style="e.conflict ? 'opacity:.5' : ''">{{ e.prenom }} {{ e.nom }}</span>
+                              <span v-if="e.conflict"
+                                :style="e.conflict.type === 'overlap' ? 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca' : 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa'"
+                                style="font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap;flex-shrink:0">
+                                ⚠ {{ e.conflict.label }}
                               </span>
-                              <span class="dispo-tag"
-                                :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
-                                {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
-                              </span>
-                            </template>
+                              <template v-else>
+                                <span v-if="row.cells[day].creneau.poste_id" class="dispo-tag"
+                                  :class="e.hasPoste ? 'dispo-yes' : 'dispo-no'" style="opacity:.8">
+                                  {{ e.hasPoste ? '★ compétent' : '☆ non qualifié' }}
+                                </span>
+                                <span class="dispo-tag"
+                                  :class="e.hasDispo ? 'dispo-yes' : e.hasFilledDispo ? 'dispo-no' : 'dispo-none'">
+                                  {{ e.hasDispo ? '✓ dispo' : e.hasFilledDispo ? 'non dispo' : 'pas répondu' }}
+                                </span>
+                              </template>
+                            </div>
                           </div>
-                        </div>
-                      </Teleport>
-                    </div>
+                        </Teleport>
+                      </div>
+                    </template>
                   </template>
 
-                  <template v-else-if="!row.cells[day]">
+                  <template v-if="!row.cells[day]">
                     <span class="ptab-na-dash">—</span>
                   </template>
 

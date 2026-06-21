@@ -12,9 +12,9 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 export default function errorHandler(err, req, res, next) {
   const status = err.statusCode ?? 500;
   logger.error({
-    err: { name: err.name, message: err.message, stack: IS_PRODUCTION ? undefined : err.stack },
-    route: req.path,
-    method: req.method,
+    message: `${req.method} ${req.path} → ${status}: ${err.message}`,
+    name: err.name,
+    stack: IS_PRODUCTION ? undefined : err.stack,
     status,
   });
   res.status(status).json({

@@ -10,6 +10,7 @@ import {
   deleteCreneau,
   JOURS,
 } from '../models/creneauxModel.js';
+import { findPointsDeVenteBySite } from '../models/pointsDeVenteModel.js';
 import { validateUUID, assertRequired, assertISOWeek } from '../utils/validators.js';
 import { NotFoundError, ValidationError } from '../errors/index.js';
 import pool from '../models/db.js';
@@ -18,8 +19,9 @@ const router = Router();
 router.use(requireManagerAuth, siteScope);
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+const TYPES_ACTIVITE = ['restauration', 'programmation', 'privatisation', 'autre'];
 
-function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin }) {
+function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin, type_activite }) {
   if (!jour || !JOURS.includes(jour)) {
     throw new ValidationError(`jour doit être parmi : ${JOURS.join(', ')}`);
   }
@@ -31,6 +33,9 @@ function validateCreneauFields({ jour, slot_label, heure_debut, heure_fin }) {
   }
   if (heure_debut === heure_fin) {
     throw new ValidationError('heure_debut et heure_fin ne peuvent pas être identiques');
+  }
+  if (type_activite != null && !TYPES_ACTIVITE.includes(type_activite)) {
+    throw new ValidationError(`type_activite doit être parmi : ${TYPES_ACTIVITE.join(', ')}`);
   }
 }
 
@@ -44,7 +49,8 @@ router.get('/semaine/:isoWeek', async (req, res, next) => {
       [req.siteId]
     );
     const creneaux = await findCreneauxBySemaine(semaine.id, req.siteId);
-    res.json({ ok: true, data: { semaine, creneaux, postes: postes.rows } });
+    const pointsDeVente = await findPointsDeVenteBySite(req.siteId);
+    res.json({ ok: true, data: { semaine, creneaux, postes: postes.rows, pointsDeVente } });
   } catch (err) {
     next(err);
   }
@@ -66,6 +72,8 @@ router.post('/semaine/:isoWeek', async (req, res, next) => {
       heureFin: req.body.heure_fin,
       posteId: req.body.poste_id ?? null,
       nbPostes,
+      pointDeVenteId: req.body.point_de_vente_id ?? null,
+      typeActivite: req.body.type_activite ?? null,
     });
     res.status(201).json({ ok: true, data: creneau });
   } catch (err) {
@@ -103,12 +111,14 @@ router.patch('/semaine/:isoWeek/:creneauId', async (req, res, next) => {
     if (!Number.isInteger(nbPostes) || nbPostes < 1 || nbPostes > 20) throw new ValidationError('nb_postes doit être un entier entre 1 et 20');
     const semaine = await findOrCreateSemaine(req.siteId, req.params.isoWeek);
     const updated = await updateCreneau(req.params.creneauId, semaine.id, {
-      slotLabel:  req.body.slot_label.trim(),
-      heureDebut: req.body.heure_debut,
-      heureFin:   req.body.heure_fin,
-      posteId:    req.body.poste_id ?? null,
+      slotLabel:       req.body.slot_label.trim(),
+      heureDebut:      req.body.heure_debut,
+      heureFin:        req.body.heure_fin,
+      posteId:         req.body.poste_id ?? null,
       nbPostes,
-      notes:      req.body.notes?.trim() || null,
+      notes:           req.body.notes?.trim() || null,
+      pointDeVenteId:  req.body.point_de_vente_id ?? null,
+      typeActivite:    req.body.type_activite ?? null,
     });
     if (!updated) throw new NotFoundError('Créneau introuvable');
     res.json({ ok: true, data: updated });

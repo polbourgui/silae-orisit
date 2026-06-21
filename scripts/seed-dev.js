@@ -105,7 +105,40 @@ for (const libelle of postesData) {
 }
 console.log(`✓ ${postes.length} postes`);
 
+// ── Points de vente ──────────────────────────────────────────────────────────
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS points_de_vente (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    site_id UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+    nom VARCHAR(100) NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (site_id, nom)
+  )
+`).catch(() => {});
+await pool.query(`ALTER TABLE creneaux ADD COLUMN IF NOT EXISTS point_de_vente_id UUID REFERENCES points_de_vente(id) ON DELETE SET NULL`).catch(() => {});
+
+const pdvData = [
+  { nom: 'Bar',              couleur: '#f59e0b', sort_order: 0 },
+  { nom: 'Salle principale', couleur: '#6366f1', sort_order: 1 },
+  { nom: 'Terrasse',         couleur: '#10b981', sort_order: 2 },
+];
+const pdvs = [];
+for (const p of pdvData) {
+  const { rows } = await pool.query(`
+    INSERT INTO points_de_vente (site_id, nom, couleur, sort_order)
+    VALUES ($1, $2, $3, $4)
+    ON CONFLICT (site_id, nom) DO UPDATE SET couleur = EXCLUDED.couleur, sort_order = EXCLUDED.sort_order
+    RETURNING id, nom, couleur
+  `, [SITE_ID, p.nom, p.couleur, p.sort_order]);
+  pdvs.push(rows[0]);
+}
+console.log(`✓ ${pdvs.length} points de vente`);
+
 // ── Extras ───────────────────────────────────────────────────────────────────
+// Nettoyer les liaisons site ↔ extra pour ce site avant de les recréer (idempotence)
+await pool.query('DELETE FROM site_extras WHERE site_id = $1', [SITE_ID]);
+
 // 50 extras avec noms français réalistes et compétences variées
 // postesData : 0=Chef de rang, 1=Barman, 2=Runner, 3=Responsable, 4=Vestiaire, 5=Billetterie
 const extrasData = [
@@ -173,9 +206,7 @@ for (const e of extrasData) {
   const extra = extRows[0];
   // Liaison site avec matricule Silae propre à ce dossier
   await pool.query(`
-    INSERT INTO site_extras (site_id, extra_id, matricule_silae)
-    VALUES ($1, $2, $3)
-    ON CONFLICT (site_id, extra_id) DO UPDATE SET matricule_silae = EXCLUDED.matricule_silae
+    INSERT INTO site_extras (site_id, extra_id, matricule_silae) VALUES ($1, $2, $3)
   `, [SITE_ID, extra.id, e.matricule]);
   extras.push({ ...extra, postesIdx: e.postes });
 }

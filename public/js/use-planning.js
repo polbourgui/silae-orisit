@@ -10,6 +10,7 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
   const pSaving            = ref(false);
   const pSearchState       = ref({});
   const planningDisplayMode = ref('liste');
+  const pFilterPdv         = ref(null); // null = toutes les salles
 
   const pIsPublished = computed(() => !!pPlanning.value?.published_at);
   const pNbPourvus   = computed(() => pAffectations.value.length);
@@ -30,6 +31,22 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
       }
     }
     return rows;
+  });
+
+  // Vue liste filtrée : supprime les séparateurs de jour orphelins
+  const pFilteredTableRows = computed(() => {
+    if (!pFilterPdv.value) return pTableRows.value;
+    const result = [];
+    let pendingSep = null;
+    for (const row of pTableRows.value) {
+      if (row.isSep) {
+        pendingSep = row;
+      } else if (row.point_de_vente_id === pFilterPdv.value) {
+        if (pendingSep) { result.push(pendingSep); pendingSep = null; }
+        result.push(row);
+      }
+    }
+    return result;
   });
 
   async function loadPlanning() {
@@ -197,20 +214,24 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
 
     const rowMap = new Map();
     for (const c of pCreneaux.value) {
-      const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}`;
+      const key = `${c.heure_debut}|${c.heure_fin}|${c.slot_label ?? ''}|${c.point_de_vente_id ?? ''}`;
       if (!rowMap.has(key)) {
+        const posteRow = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
         rowMap.set(key, {
           key,
-          heure_debut: c.heure_debut,
-          heure_fin:   c.heure_fin,
-          slot_label:  c.slot_label,
-          cells:       {},
-          maxNb:       0,
+          heure_debut:       c.heure_debut,
+          heure_fin:         c.heure_fin,
+          slot_label:        c.slot_label,
+          pdv_nom:           c.pdv_nom ?? null,
+          pdv_couleur:       c.pdv_couleur ?? null,
+          point_de_vente_id: c.point_de_vente_id ?? null,
+          poste:             posteRow,
+          cells:             {},
+          maxNb:             0,
         });
       }
       const row = rowMap.get(key);
       const nb  = c.nb_postes ?? 1;
-      if (nb > row.maxNb) row.maxNb = nb;
       const affs  = pAffectations.value.filter(a => a.creneau_id === c.id);
       const poste = c.poste_id ? allPostes.value.find(p => p.id === c.poste_id) : null;
       const slots = [];
@@ -219,7 +240,14 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
         const extra = aff ? pExtras.value.find(e => e.id === aff.extra_id) : null;
         slots.push({ slotKey: `${c.id}::${i}`, slotIndex: i, aff, extra });
       }
-      row.cells[c.jour] = { creneau: c, nb, poste, slots };
+      if (!row.cells[c.jour]) {
+        row.cells[c.jour] = { creneau: c, nb, poste, slots };
+      } else {
+        // Multiple créneaux on same day share this key — accumulate slots
+        row.cells[c.jour].slots.push(...slots);
+        row.cells[c.jour].nb += nb;
+      }
+      if (row.cells[c.jour].nb > row.maxNb) row.maxNb = row.cells[c.jour].nb;
     }
 
     const rows = [...rowMap.values()].sort((a, b) => {
@@ -230,13 +258,23 @@ export function usePlanning({ currentWeek, showAlert, allPostes, activeView }) {
     return { days, rows };
   });
 
+  // Vue tableau filtrée par salle
+  const pFilteredTableauData = computed(() => {
+    if (!pFilterPdv.value) return pTableauData.value;
+    const rows = pTableauData.value.rows.filter(r => r.point_de_vente_id === pFilterPdv.value);
+    const daysSet = new Set(rows.flatMap(r => Object.keys(r.cells)));
+    const days = JOURS_ORDER.filter(j => daysSet.has(j));
+    return { days, rows };
+  });
+
   watch(currentWeek, () => { if (activeView.value === 'planning') loadPlanning(); });
 
   return {
     pPlanning, pIsPublished, pLoading, pSaving,
     pCreneaux, pExtras, pAffectations,
-    pTableRows, pTableauData, pNbPourvus, pNbTotal, pSearchState,
-    planningDisplayMode,
+    pTableRows, pFilteredTableRows, pTableauData, pFilteredTableauData,
+    pNbPourvus, pNbTotal, pSearchState,
+    planningDisplayMode, pFilterPdv,
     loadPlanning, proposeAlgo, publishPlanning,
     filteredExtras, openSearch, closeSearch, selectExtra, clearExtra, dropStyle,
   };

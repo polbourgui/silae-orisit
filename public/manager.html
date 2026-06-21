@@ -23,6 +23,9 @@
     <div class="nav-section" style="margin-top:12px">Données</div>
     <a href="#" id="nav-extras">Extras</a>
     <a href="#" id="nav-postes">Postes</a>
+    <a href="#" id="nav-salles">Salles</a>
+    <div class="nav-section" style="margin-top:12px">Reporting</div>
+    <a href="#" id="nav-reporting">Activité &amp; heures</a>
   </nav>
   <main id="app"><!-- Injecté par Vue --></main>
 </div>
@@ -37,33 +40,41 @@ import { TEMPLATE_PLANNING } from '/js/template-planning.js';
 import { useExtras }        from '/js/use-extras.js';
 import { TEMPLATE_EXTRAS }  from '/js/template-extras.js';
 import { usePostes, TEMPLATE_POSTES } from '/js/use-postes.js';
+import { usePointsDeVente, TEMPLATE_POINTS_DE_VENTE } from '/js/use-points-de-vente.js';
+import { useReporting, ACTIVITE_OPTIONS, ACTIVITE_LABELS, ACTIVITE_COLORS, ACTIVITE_STYLES } from '/js/use-reporting.js';
+import { TEMPLATE_REPORTING } from '/js/template-reporting.js';
 
 const app = createApp({
   setup() {
     const activeView  = ref('creneaux');
     const currentWeek = ref(isoWeekFromDate(new Date()));
-    const alertMsg    = ref(null);
-    const allPostes   = ref([]);
+    const alertMsg          = ref(null);
+    const allPostes         = ref([]);
+    const allPointsDeVente  = ref([]);
 
     function showAlert(type, msg) {
       alertMsg.value = { type, msg };
       setTimeout(() => { alertMsg.value = null; }, 4000);
     }
 
-    const ctx = { activeView, currentWeek, showAlert, allPostes };
+    const ctx = { activeView, currentWeek, showAlert, allPostes, allPointsDeVente };
 
     const c = useCreneaux(ctx);
     const p = usePlanning(ctx);
     const e = useExtras(ctx);
-    const po = usePostes(ctx);
+    const po  = usePostes(ctx);
+    const pdv = usePointsDeVente(ctx);
+    const rep = useReporting(ctx);
 
     const weekLabel   = computed(() => currentWeek.value.replace('-W', ' — Semaine '));
     const boundsLabel = computed(() => weekBoundsLabel(currentWeek.value));
 
     watch(activeView, v => {
-      if (v === 'planning') { p.loadPlanning(); if (allPostes.value.length === 0) po.loadPostes(); }
+      if (v === 'planning') { p.loadPlanning(); if (allPostes.value.length === 0) po.loadPostes(); if (allPointsDeVente.value.length === 0) pdv.loadPointsDeVente(); }
       if (v === 'extras')   { if (e.eExtras.value.length === 0) e.loadExtras(); if (allPostes.value.length === 0) po.loadPostes(); }
       if (v === 'postes' && allPostes.value.length === 0) po.loadPostes();
+      if (v === 'salles') pdv.loadPointsDeVente();
+      if (v === 'reporting') rep.loadReporting();
     });
 
     return {
@@ -74,11 +85,15 @@ const app = createApp({
       nextWeek: () => { currentWeek.value = offsetWeek(currentWeek.value, +1); },
       avatarColor, initials, duration,
       allPostes,
+      allPointsDeVente,
       showAlert,
       ...c,
       ...p,
       ...e,
       ...po,
+      ...pdv,
+      ...rep,
+      ACTIVITE_OPTIONS, ACTIVITE_LABELS, ACTIVITE_COLORS, ACTIVITE_STYLES,
     };
   },
 
@@ -90,6 +105,8 @@ const app = createApp({
     ${TEMPLATE_PLANNING}
     ${TEMPLATE_EXTRAS}
     ${TEMPLATE_POSTES}
+    ${TEMPLATE_POINTS_DE_VENTE}
+    ${TEMPLATE_REPORTING}
   </div>`,
 });
 
@@ -132,6 +149,8 @@ if (!token) {
     { id: 'nav-plannings', view: 'planning' },
     { id: 'nav-extras',   view: 'extras' },
     { id: 'nav-postes',   view: 'postes' },
+    { id: 'nav-salles',     view: 'salles' },
+    { id: 'nav-reporting',  view: 'reporting' },
   ];
   navLinks.forEach(({ id, view }) => {
     document.getElementById(id).addEventListener('click', e => {
