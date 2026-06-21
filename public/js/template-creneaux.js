@@ -46,11 +46,11 @@ export const TEMPLATE_CRENEAUX = `
       <table v-else>
         <thead><tr>
           <th>Jour</th><th>Libellé</th><th>Horaires</th><th>Durée</th><th>Poste</th><th>Salle</th>
-          <th style="text-align:center" title="Nombre de postes">Qté</th><th>Notes</th><th></th>
+          <th style="text-align:center" title="Nombre de postes">Qté</th><th>Activité</th><th>Notes</th><th></th>
         </tr></thead>
         <tbody>
           <template v-for="row in tableRows" :key="row.isSeparator ? 'sep-'+row.jour : row.id">
-            <tr v-if="row.isSeparator" class="day-separator"><td colspan="9"><span :class="['jour-badge','jour-'+row.jour]" style="margin-right:8px">{{ JOURS_COURT[row.jour] }}</span>{{ row.dateLabel }}</td></tr>
+            <tr v-if="row.isSeparator" class="day-separator"><td colspan="10"><span :class="['jour-badge','jour-'+row.jour]" style="margin-right:8px">{{ JOURS_COURT[row.jour] }}</span>{{ row.dateLabel }}</td></tr>
             <tr v-else>
               <td><span :class="['jour-badge','jour-'+row.jour]">{{ JOURS_COURT[row.jour] }}</span></td>
               <td>{{ row.slot_label }}</td>
@@ -65,6 +65,10 @@ export const TEMPLATE_CRENEAUX = `
                 <span v-else style="color:#cbd5e1">—</span>
               </td>
               <td style="text-align:center;font-size:12px;font-weight:600;color:#334155">{{ row.nb_postes ?? 1 }}</td>
+              <td style="font-size:12px">
+                <span v-if="row.type_activite" :style="ACTIVITE_STYLES[row.type_activite]">{{ ACTIVITE_LABELS[row.type_activite] }}</span>
+                <span v-else style="color:#cbd5e1">—</span>
+              </td>
               <td style="max-width:180px">
                 <span v-if="row.notes" style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:4px;padding:1px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:170px" :title="row.notes">
                   📋 {{ row.notes }}
@@ -119,6 +123,13 @@ export const TEMPLATE_CRENEAUX = `
           <select v-model="editForm.point_de_vente_id">
             <option value="">— Aucune salle —</option>
             <option v-for="s in pointsDeVente" :key="s.id" :value="s.id">{{ s.nom }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type d'activité <span style="font-weight:400;color:#94a3b8">(optionnel)</span></label>
+          <select v-model="editForm.type_activite">
+            <option value="">— Non défini —</option>
+            <option v-for="a in ACTIVITE_OPTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
           </select>
         </div>
         <div class="form-group">
@@ -223,11 +234,18 @@ export const TEMPLATE_CRENEAUX = `
                 <input type="number" v-model.number="form.nb_postes" min="1" max="20" style="text-align:center" />
               </div>
             </div>
-            <div class="form-group" style="margin-bottom:14px">
+            <div class="form-group" style="margin-bottom:10px">
               <label>Salle (optionnel)</label>
               <select v-model="form.point_de_vente_id">
                 <option value="">— Aucune salle —</option>
                 <option v-for="s in pointsDeVente" :key="s.id" :value="s.id">{{ s.nom }}</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Type d'activité (optionnel)</label>
+              <select v-model="form.type_activite">
+                <option value="">— Non défini —</option>
+                <option v-for="a in ACTIVITE_OPTIONS" :key="a.value" :value="a.value">{{ a.label }}</option>
               </select>
             </div>
             <button class="btn btn-primary btn-full" @click="addCreneau" :disabled="saving">

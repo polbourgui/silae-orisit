@@ -7,7 +7,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
   const pointsDeVente   = ref([]);
   const loading         = ref(false);
   const saving          = ref(false);
-  const form            = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', point_de_vente_id: '', nb_postes: 1, jours: ['lundi'] });
+  const form            = ref({ slot_label: '', heure_debut: '', heure_fin: '', poste_id: '', point_de_vente_id: '', nb_postes: 1, jours: ['lundi'], type_activite: '' });
   const formErrors  = ref({});
   const csvRows     = ref([]);
   const csvParsed   = ref(false);
@@ -75,12 +75,13 @@ export function useCreneaux({ currentWeek, showAlert }) {
           method: 'POST',
           body: JSON.stringify({
             jour,
-            slot_label:  form.value.slot_label.trim(),
-            heure_debut: form.value.heure_debut,
-            heure_fin:   form.value.heure_fin,
-            poste_id:            form.value.poste_id || null,
-            point_de_vente_id:   form.value.point_de_vente_id || null,
-            nb_postes:           form.value.nb_postes || 1,
+            slot_label:        form.value.slot_label.trim(),
+            heure_debut:       form.value.heure_debut,
+            heure_fin:         form.value.heure_fin,
+            poste_id:          form.value.poste_id || null,
+            point_de_vente_id: form.value.point_de_vente_id || null,
+            nb_postes:         form.value.nb_postes || 1,
+            type_activite:     form.value.type_activite || null,
           }),
         });
         created.push(c);
@@ -89,7 +90,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
         JOURS.indexOf(a.jour) - JOURS.indexOf(b.jour) || a.heure_debut.localeCompare(b.heure_debut)
       );
       showAlert('success', toAdd.length > 1 ? `${toAdd.length} créneaux ajoutés` : 'Créneau ajouté');
-      form.value.slot_label = ''; form.value.poste_id = ''; form.value.point_de_vente_id = '';
+      form.value.slot_label = ''; form.value.poste_id = ''; form.value.point_de_vente_id = ''; form.value.type_activite = '';
     } catch (err) { showAlert('error', err.message); }
     finally { saving.value = false; }
   }
@@ -197,6 +198,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
       nb_postes:         creneau.nb_postes ?? 1,
       notes:             creneau.notes ?? '',
       jour:              creneau.jour,
+      type_activite:     creneau.type_activite ?? '',
     };
     editModal.value = creneau;
   }
@@ -211,6 +213,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
           ...editForm.value,
           poste_id:          editForm.value.poste_id || null,
           point_de_vente_id: editForm.value.point_de_vente_id || null,
+          type_activite:     editForm.value.type_activite || null,
         }) }
       );
       creneaux.value = creneaux.value.map(c => c.id === updated.id ? updated : c);
