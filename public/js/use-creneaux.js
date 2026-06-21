@@ -16,11 +16,20 @@ export function useCreneaux({ currentWeek, showAlert }) {
   const presetForm      = ref({ label: '', slot_label: '', heure_debut: '', heure_fin: '' });
   const presetSaving    = ref(false);
 
+  const filterPdv = ref('');
+
   const weekLabel   = computed(() => currentWeek.value.replace('-W', ' — Semaine '));
   const boundsLabel = computed(() => weekBoundsLabel(currentWeek.value));
-  const tableRows   = computed(() => groupByJour(creneaux.value, currentWeek.value));
+
+  const filteredCreneaux = computed(() =>
+    filterPdv.value
+      ? creneaux.value.filter(c => c.point_de_vente_id === filterPdv.value)
+      : creneaux.value
+  );
+
+  const tableRows   = computed(() => groupByJour(filteredCreneaux.value, currentWeek.value));
   const totalHeures = computed(() =>
-    creneaux.value.reduce((sum, c) => {
+    filteredCreneaux.value.reduce((sum, c) => {
       const [dh, dm] = c.heure_debut.split(':').map(Number);
       const [fh, fm] = c.heure_fin.split(':').map(Number);
       let mins = (fh * 60 + fm) - (dh * 60 + dm);
@@ -228,6 +237,7 @@ export function useCreneaux({ currentWeek, showAlert }) {
 
   return {
     creneaux, postes, pointsDeVente, loading, saving, form, formErrors, csvRows, csvParsed,
+    filterPdv, filteredCreneaux,
     weekLabel, boundsLabel, tableRows, totalHeures,
     toggleJour, addCreneau, applyPreset, deleteCreneau,
     onFileChange, onDrop, cancelImport, confirmImport, posteLabel, pdvLabel, pdvColor,

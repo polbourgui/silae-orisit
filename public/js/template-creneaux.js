@@ -15,8 +15,17 @@ export const TEMPLATE_CRENEAUX = `
     </div>
     <button @click="nextWeek">›</button>
     <div class="spacer"></div>
+    <template v-if="!loading && pointsDeVente.length">
+      <select v-model="filterPdv"
+        style="font-size:12px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#fff;color:#334155;height:30px">
+        <option value="">Toutes les salles</option>
+        <option v-for="s in pointsDeVente" :key="s.id" :value="s.id">{{ s.nom }}</option>
+      </select>
+    </template>
     <span v-if="loading" style="color:#94a3b8;font-size:13px">Chargement…</span>
-    <span v-else style="font-size:13px;color:#64748b">{{ creneaux.length }} créneau(x) · {{ totalHeures }}h total</span>
+    <span v-else style="font-size:13px;color:#64748b">
+      {{ filteredCreneaux.length }}<template v-if="filterPdv">/{{ creneaux.length }}</template> créneau(x) · {{ totalHeures }}h
+    </span>
   </div>
 
   <div class="stats-bar">
